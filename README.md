@@ -54,7 +54,7 @@ python3 enkidu-poetry.py --input-dir enkidu-poetry-input/ --output-dir enkidu-po
 
 **LLM Rewrite Feature:**
 
-The `--rewrite` option requires a local LLM server compatible with the OpenAI Chat Completions API, running at `http://localhost:1234/v1`. This is the default address for LM Studio. If the server is not found, this step is skipped.
+The `--rewrite` option has a local LLM doing a pass over the poetry to stitch it into more meaningful units. Untested. Requires a local LLM server compatible with the OpenAI Chat Completions API, running at `http://localhost:1234/v1`. This is the default address for LM Studio. If the server is not found, this step is skipped.
 
 ### `enkidu-speech.py`
 
