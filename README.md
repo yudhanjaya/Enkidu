@@ -1,6 +1,20 @@
 # Enkidu
 
-Pair of Python scripts for procedural text generation. This will come in handy on a later Salvage Crew novel. 
+Pair of Python scripts and an HTML file containing a game of civilizational tests (Gauntlet). This will come in handy on a later Salvage Crew novel. 
+
+## Gauntlet
+
+
+
+A browser-based game built by Claude using the prompt in GAUNTLET-SPEC.md.
+
+You play as a swarm of humans-turned-AI navigating a grueling ethics gauntlet administered by a god-like alien Game Master. Under the hood, a state-machine architecture dynamically routes you through a possible 7-step path. These tests scale up the Kardashev scale in complexity and essentially function as brutal trolley problems.
+
+The interface is split into two main views: a card-based frontend for the player's scenarios and choices, and a live tree-based dashboard that exposes the GM's backend routing logic. As you make choices, the GM updates your "Ethical Profile" based on your adherence to six strict precepts (like the Sanctity of Life or Restraint on Greed). 
+
+If you start hoarding resources or acting aggressively, the routing algorithm will actively force you into future nodes that target those exact moral weaknesses. 
+
+Getting to the end without failing a precept is designed to be extremely difficult.
 
 
 ## Scripts
