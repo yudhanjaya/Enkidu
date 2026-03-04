@@ -4,7 +4,8 @@ Pair of Python scripts and an HTML file containing a game of civilizational test
 
 ## Gauntlet
 
-<img width="3769" height="1935" alt="image" src="https://github.com/user-attachments/assets/333b5b8a-582f-44ec-ba69-325df90e50e9" />
+
+<img width="1879" height="968" alt="image" src="https://github.com/user-attachments/assets/bab80747-8a3b-4383-a09b-ccbbe5b1a868" />
 
 
 
