@@ -3,302 +3,556 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>THE GAUNTLET — Game Master Interface</title>
-<link href="https://fonts.googleapis.com/css2?family=Orbitron:wght@400;600;900&family=Share+Tech+Mono&family=Rajdhani:wght@300;400;600;700&display=swap" rel="stylesheet">
+<title>THE GAUNTLET — Enkidu Interface</title>
+<link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:ital,wght@0,400;0,500;0,600;1,400&family=Barlow+Condensed:wght@300;400;600;700;800&family=Barlow:wght@400;500;600&display=swap" rel="stylesheet">
+<script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
 <style>
 *{margin:0;padding:0;box-sizing:border-box}
+
 :root{
-  --bg:#03040f;--panel:#090b1e;--border:#1e3254;
-  --cyan:#00ffcc;--blue:#2299ff;--red:#ff3355;
-  --gold:#ffbb22;--green:#00ff88;--purple:#bb55ff;
-  --text:#ccd8f2;--dim:#607898;--white:#f0f8ff;
-  --glow-c: 0 0 10px #00ffcc66, 0 0 30px #00ffcc28;
-  --glow-b: 0 0 10px #2299ff66, 0 0 30px #2299ff28;
-  --glow-r: 0 0 10px #ff335566, 0 0 30px #ff335528;
+  /* === DOTTED NOTEBOOK — LIGHT THEME === */
+  --bg:        #e8e6e0;   /* warm light gray — aged notebook page */
+  --panel:     #dedcd6;   /* left panel surface, slightly darker */
+  --panel-alt: #d8d6d0;
+  --border:    #c0bdb5;   /* clear but not harsh border */
+  --border-hi: #a8a49c;   /* stronger border for emphasis */
+
+  /* Accents — darkened for light-bg legibility (min ~4.5:1 contrast) */
+  --cyan:   #b85a10;   /* primary: deep burnt orange */
+  --gold:   #9a7010;   /* secondary: dark amber */
+  --blue:   #2e6e96;   /* teal-blue */
+  --red:    #a83020;   /* danger red */
+  --green:  #3a7a18;   /* positive/enlightened */
+  --purple: #6040a8;   /* analysis / GM voice */
+  --text:   #2c2a26;   /* body prose — near-black, maximum readability */
+  --dim:    #706c64;   /* labels, meta — legible mid-gray */
+  --white:  #1a1816;   /* headings / primary content — darkest */
+
+  /* Glows on light bg = shadows instead */
+  --glow-c: 0 2px 8px rgba(184,90,16,0.25),  0 4px 20px rgba(184,90,16,0.1);
+  --glow-b: 0 2px 8px rgba(154,112,16,0.25), 0 4px 20px rgba(154,112,16,0.1);
+  --glow-r: 0 2px 8px rgba(168,48,32,0.25),  0 4px 20px rgba(168,48,32,0.1);
 }
-html,body{height:100%;overflow:hidden;background:var(--bg)}
-body{font-family:'Share Tech Mono',monospace;color:var(--text);display:flex;flex-direction:column}
 
-/* STARFIELD */
-#stars{position:fixed;inset:0;pointer-events:none;z-index:0;overflow:hidden}
-.star{position:absolute;border-radius:50%;background:white;animation:twinkle var(--d,3s) ease-in-out infinite var(--del,0s)}
-@keyframes twinkle{0%,100%{opacity:var(--op,0.3)}50%{opacity:0.05}}
+html, body { height:100%; overflow:hidden; background:var(--bg); }
+body {
+  font-family: 'Barlow', sans-serif;
+  font-size: 16px;
+  color: var(--text);
+  display: flex;
+  flex-direction: column;
+}
 
-/* HEADER */
-header{
-  position:relative;z-index:10;
-  background:linear-gradient(180deg,#0a0a25 0%,transparent 100%);
+/* Dotted notebook grid — dark dots on light gray */
+body::before {
+  content:''; position:fixed; inset:0; z-index:1; pointer-events:none;
+  background-image:
+    radial-gradient(circle, rgba(80,76,68,0.28) 1px, transparent 1px);
+  background-size: 22px 22px;
+}
+
+/* No scanlines on light theme */
+body::after { content:''; }
+
+/* Particle field (stars remapped to warm sparks) */
+#stars { position:fixed; inset:0; pointer-events:none; z-index:0; overflow:hidden; }
+.star {
+  position:absolute; border-radius:50%;
+  background: rgba(80,76,68,0.12);
+  animation: twinkle var(--d,3s) ease-in-out infinite var(--del,0s);
+}
+@keyframes twinkle { 0%,100%{opacity:var(--op,0.15)} 50%{opacity:0.02} }
+
+/* ──────────────────────────────────────
+   HEADER
+────────────────────────────────────── */
+header {
+  position: relative; z-index:10;
+  background: var(--panel);
+  border-bottom: 1px solid var(--border-hi);
+  padding: 12px 24px;
+  display: flex; align-items:center; justify-content:space-between;
+  flex-shrink: 0;
+}
+/* Thin accent rule under header */
+header::after {
+  content:''; position:absolute; bottom:-1px; left:0; right:0; height:1px;
+  background: linear-gradient(90deg, transparent 0%, var(--cyan) 35%, var(--gold) 65%, transparent 100%);
+  opacity: 0.45;
+}
+
+.gm-title {
+  font-family: 'Barlow Condensed', sans-serif;
+  font-size: 14px; font-weight:800; letter-spacing:5px;
+  color: var(--cyan); text-transform:uppercase;
+  text-shadow: var(--glow-c);
+}
+.gm-subtitle {
+  font-family: 'IBM Plex Mono', monospace;
+  font-size: 10px; color:var(--dim); letter-spacing:2px; margin-top:3px;
+  text-transform: uppercase;
+}
+
+.header-center { text-align:center; }
+.kardashev-display {
+  font-family: 'Barlow Condensed', sans-serif;
+  font-size: 30px; font-weight:800; color:var(--gold);
+  text-shadow: var(--glow-b); letter-spacing:4px;
+}
+.k-label {
+  font-family: 'IBM Plex Mono', monospace;
+  font-size: 10px; color:var(--dim); letter-spacing:3px; text-align:center;
+  text-transform: uppercase;
+}
+
+/* Progress diamonds */
+.step-indicators { display:flex; gap:6px; align-items:center; }
+.step-dot {
+  width:10px; height:10px; border:1px solid var(--dim);
+  background:transparent; transition:all 0.4s;
+  clip-path: polygon(50% 0%,100% 50%,50% 100%,0% 50%);
+}
+.step-dot.done   { background:var(--cyan); border-color:var(--cyan); box-shadow:var(--glow-c); }
+.step-dot.current{ background:transparent; border-color:var(--gold); box-shadow:0 0 8px var(--gold); animation:pulse-dot 1.2s ease-in-out infinite; }
+.step-dot.fail   { background:var(--red); border-color:var(--red); }
+@keyframes pulse-dot { 0%,100%{opacity:1} 50%{opacity:0.2} }
+@keyframes radar-pulse { 0%,100%{transform:scale(1)} 50%{transform:scale(1.8);opacity:0.8} }
+.pulse-active { animation: radar-pulse 0.8s ease-out 2; transform-origin: center; transform-box: fill-box; }
+
+/* ──────────────────────────────────────
+   MAIN LAYOUT
+────────────────────────────────────── */
+main { flex:1; display:flex; overflow:hidden; position:relative; z-index:5; }
+
+/* ──────────────────────────────────────
+   LEFT PANEL — GM TREE
+────────────────────────────────────── */
+#gm-tree-panel {
+  width:300px; flex-shrink:0;
+  background: var(--panel);
+  border-right: 1px solid var(--border-hi);
+  display:flex; flex-direction:column; overflow:hidden;
+}
+
+.panel-header {
+  padding:11px 16px;
   border-bottom:1px solid var(--border);
-  padding:12px 24px;display:flex;align-items:center;justify-content:space-between;
-  flex-shrink:0;
+  font-family: 'Barlow Condensed', sans-serif;
+  font-size: 11px; font-weight:700; letter-spacing:3px;
+  color:var(--cyan); text-transform:uppercase;
+  display:flex; align-items:center; gap:8px;
+  background: rgba(0,0,0,0.06);
 }
-.gm-title{font-family:'Orbitron',monospace;font-size:11px;font-weight:900;letter-spacing:4px;color:var(--cyan);text-shadow:var(--glow-c)}
-.gm-subtitle{font-size:10px;color:var(--dim);letter-spacing:2px;margin-top:2px}
-.header-center{text-align:center}
-.kardashev-display{font-family:'Orbitron',monospace;font-size:22px;font-weight:900;color:var(--cyan);text-shadow:var(--glow-c);letter-spacing:2px}
-.k-label{font-size:9px;color:var(--dim);letter-spacing:3px;text-align:center}
-.step-indicators{display:flex;gap:6px;align-items:center}
-.step-dot{width:10px;height:10px;border-radius:50%;border:1px solid var(--dim);background:transparent;transition:all 0.5s;position:relative}
-.step-dot.done{background:var(--cyan);border-color:var(--cyan);box-shadow:var(--glow-c)}
-.step-dot.current{background:transparent;border-color:var(--gold);box-shadow:0 0 8px var(--gold);animation:pulse-dot 1s ease-in-out infinite}
-.step-dot.fail{background:var(--red);border-color:var(--red)}
-@keyframes pulse-dot{0%,100%{opacity:1}50%{opacity:0.4}}
+.panel-header::before {
+  content:''; width:5px; height:5px; flex-shrink:0;
+  background:var(--cyan); box-shadow:var(--glow-c);
+  clip-path:polygon(50% 0%,100% 50%,50% 100%,0% 50%);
+  animation:pulse-dot 2.5s ease-in-out infinite;
+}
 
-/* MAIN LAYOUT */
-main{flex:1;display:flex;overflow:hidden;position:relative;z-index:5}
+#tree-scroll { flex:1; overflow-y:auto; padding:14px 12px; }
+#tree-scroll::-webkit-scrollbar { width:3px; }
+#tree-scroll::-webkit-scrollbar-track { background:transparent; }
+#tree-scroll::-webkit-scrollbar-thumb { background:var(--border); border-radius:2px; }
 
-/* LEFT: GM TREE */
-#gm-tree-panel{
-  width:300px;flex-shrink:0;
-  background:rgba(9,11,30,0.97);
-  border-right:1px solid var(--border);
-  display:flex;flex-direction:column;overflow:hidden;
+.tree-node {
+  margin-bottom:6px;
+  animation:node-appear 0.4s ease forwards; opacity:0;
 }
-.panel-header{
-  padding:12px 16px;border-bottom:1px solid var(--border);
-  font-size:9px;letter-spacing:3px;color:var(--cyan);font-family:'Orbitron',monospace;
-  display:flex;align-items:center;gap:8px;
-}
-.panel-header::before{content:'';width:6px;height:6px;border-radius:50%;background:var(--cyan);box-shadow:var(--glow-c);animation:pulse-dot 2s ease-in-out infinite}
-#tree-scroll{flex:1;overflow-y:auto;padding:16px 12px}
-#tree-scroll::-webkit-scrollbar{width:3px}
-#tree-scroll::-webkit-scrollbar-track{background:transparent}
-#tree-scroll::-webkit-scrollbar-thumb{background:var(--border)}
+@keyframes node-appear { from{opacity:0;transform:translateX(-8px)} to{opacity:1;transform:translateX(0)} }
 
-.tree-node{
-  position:relative;margin-bottom:6px;
-  animation:node-appear 0.4s ease forwards;opacity:0;
-}
-@keyframes node-appear{from{opacity:0;transform:translateX(-10px)}to{opacity:1;transform:translateX(0)}}
-.tree-connector{width:2px;height:20px;background:linear-gradient(180deg,var(--border),var(--border));margin-left:20px}
-.tree-connector.active{background:linear-gradient(180deg,var(--cyan),var(--border))}
-.node-box{
-  display:flex;align-items:flex-start;gap:10px;padding:8px 10px;
-  border:1px solid var(--border);border-radius:4px;
-  background:rgba(10,10,30,0.8);cursor:default;
-  transition:all 0.3s;
-}
-.node-box.current-node{border-color:var(--gold);background:rgba(255,170,0,0.05);box-shadow:0 0 15px rgba(255,170,0,0.1)}
-.node-box.done-node{border-color:var(--dim)}
-.node-box.future-node{border-color:var(--border);opacity:0.4}
-.node-icon{
-  width:28px;height:28px;border-radius:3px;flex-shrink:0;
-  display:flex;align-items:center;justify-content:center;
-  font-family:'Orbitron',monospace;font-size:9px;font-weight:700;
-  border:1px solid currentColor;
-}
-.node-icon.phase-a{color:#00ffcc;border-color:#00ffcc44;background:rgba(0,255,204,0.05)}
-.node-icon.phase-b{color:#0088ff;border-color:#0088ff44;background:rgba(0,136,255,0.05)}
-.node-icon.phase-c{color:#aa44ff;border-color:#aa44ff44;background:rgba(170,68,255,0.05)}
-.node-icon.phase-d{color:#ffaa00;border-color:#ffaa0044;background:rgba(255,170,0,0.05)}
-.node-icon.future-icon{color:var(--dim);border-color:var(--dim)}
-.node-info{flex:1;min-width:0}
-.node-step{font-size:8px;color:#6a88a8;letter-spacing:1px}
-.node-name{font-size:11px;color:#e8f4ff;margin:1px 0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
-.node-outcome{font-size:9px;margin-top:3px}
-.node-outcome.good{color:var(--green)}
-.node-outcome.bad{color:var(--red)}
-.node-outcome.mixed{color:var(--gold)}
-.mini-bars{display:flex;gap:2px;margin-top:4px}
-.mini-bar{height:3px;flex:1;border-radius:1px;background:var(--border);overflow:hidden}
-.mini-bar-fill{height:100%;border-radius:1px;transition:width 0.5s}
+.tree-connector { width:1px; height:18px; background:var(--border); margin-left:20px; }
+.tree-connector.active { background:linear-gradient(180deg, var(--cyan), var(--border)); }
 
-/* RADAR SECTION */
-#radar-section{
+.node-box {
+  display:flex; align-items:flex-start; gap:10px;
+  padding:8px 10px 8px 13px;
+  border:1px solid var(--border);
+  background:rgba(0,0,0,0.05);
+  cursor:default; transition:all 0.3s; position:relative;
+}
+.node-box::before {
+  content:''; position:absolute; left:0; top:0; bottom:0; width:2px;
+  background:var(--border); transition:background 0.3s;
+}
+.node-box.current-node {
+  border-color:rgba(196,152,48,0.45);
+  background:rgba(154,112,16,0.07);
+}
+.node-box.current-node::before { background:var(--gold); }
+.node-box.done-node { border-color:var(--border); opacity:0.7; }
+.node-box.done-node::before { background:var(--green); }
+.node-box.future-node { border-color:rgba(42,40,37,0.5); opacity:0.3; }
+.node-box.future-node::before { background:transparent; }
+
+.node-icon {
+  width:28px; height:28px; flex-shrink:0;
+  display:flex; align-items:center; justify-content:center;
+  font-family:'IBM Plex Mono',monospace; font-size:10px; font-weight:600;
+  border:1px solid currentColor; background:rgba(0,0,0,0.06);
+}
+.node-icon.phase-a { color:var(--cyan);   border-color:rgba(212,136,58,0.35); }
+.node-icon.phase-b { color:var(--blue);   border-color:rgba(106,154,184,0.35); }
+.node-icon.phase-c { color:var(--purple); border-color:rgba(152,120,192,0.35); }
+.node-icon.phase-d { color:var(--gold);   border-color:rgba(196,152,48,0.35); }
+.node-icon.future-icon { color:var(--dim); border-color:var(--border); }
+
+.node-info { flex:1; min-width:0; }
+.node-step {
+  font-family:'IBM Plex Mono',monospace;
+  font-size:9px; color:var(--dim); letter-spacing:1px; text-transform:uppercase;
+}
+.node-name {
+  font-family:'Barlow Condensed',sans-serif;
+  font-size:13px; font-weight:600; color:var(--white);
+  margin:3px 0 0; overflow:hidden; text-overflow:ellipsis; white-space:nowrap;
+  letter-spacing:0.5px; text-transform:uppercase;
+}
+.node-outcome { font-size:10px; margin-top:3px; font-family:'IBM Plex Mono',monospace; }
+.node-outcome.good  { color:var(--green); }
+.node-outcome.bad   { color:#d05840; }
+.node-outcome.mixed { color:var(--gold); }
+
+.mini-bars { display:flex; gap:2px; margin-top:4px; }
+.mini-bar { height:2px; flex:1; background:var(--border); overflow:hidden; }
+.mini-bar-fill { height:100%; transition:width 0.5s; }
+
+/* ──────────────────────────────────────
+   RADAR SECTION
+────────────────────────────────────── */
+#radar-section {
   border-top:1px solid var(--border);
-  background:rgba(6,8,22,0.98);
+  background:rgba(0,0,0,0.03);
   flex-shrink:0;
 }
-#radar-section .panel-header{border-bottom:1px solid var(--border);border-top:none}
-#radar-svg-wrap{display:flex;justify-content:center;padding:4px 0 0}
-/* GM PROFILE TAGS */
-.tags-title{font-size:8px;letter-spacing:2px;color:var(--dim);margin-bottom:7px;font-family:'Orbitron',monospace}
-.tags-container{display:flex;flex-wrap:wrap;gap:5px}
-.gm-tag{
-  font-size:9px;padding:3px 8px;border-radius:2px;
-  border:1px solid;letter-spacing:1px;font-weight:600;
-}
-.tag-predatory{color:#ff6680;border-color:#ff335566;background:rgba(255,51,85,0.12)}
-.tag-enlightened{color:#44ffaa;border-color:#00ff8866;background:rgba(0,255,136,0.1)}
-.tag-deceptive{color:#cc77ff;border-color:#bb55ff66;background:rgba(187,85,255,0.1)}
-.tag-passive{color:#66aaff;border-color:#2299ff66;background:rgba(34,153,255,0.1)}
-.tag-greedy{color:#ffcc44;border-color:#ffbb2266;background:rgba(255,187,34,0.1)}
-.tag-unstable{color:#ff9933;border-color:#ff993366;background:rgba(255,153,51,0.1)}
+#radar-section .panel-header { border-bottom:1px solid var(--border); border-top:none; }
+#radar-svg-wrap { display:flex; justify-content:center; padding:6px 0 0; }
 
-/* RIGHT: SCENARIO */
-#scenario-panel{flex:1;display:flex;flex-direction:column;overflow:hidden}
+.tags-title {
+  font-family:'Barlow Condensed',sans-serif;
+  font-size:9px; letter-spacing:2px; color:var(--dim);
+  margin-bottom:7px; font-weight:700; text-transform:uppercase;
+}
+.tags-container { display:flex; flex-wrap:wrap; gap:5px; }
+.gm-tag {
+  font-family:'Barlow Condensed',sans-serif;
+  font-size:10px; padding:3px 8px; border:1px solid;
+  letter-spacing:1.5px; font-weight:700; text-transform:uppercase;
+}
+.tag-predatory { color:#d05840; border-color:rgba(192,72,56,0.5); background:rgba(192,72,56,0.12); }
+.tag-enlightened{ color:var(--green); border-color:rgba(136,184,64,0.45); background:rgba(58,122,24,0.1); }
+.tag-deceptive  { color:var(--purple); border-color:rgba(152,120,192,0.45); background:rgba(96,64,168,0.1); }
+.tag-passive    { color:var(--blue); border-color:rgba(106,154,184,0.45); background:rgba(46,110,150,0.1); }
+.tag-greedy     { color:var(--gold); border-color:rgba(196,152,48,0.45); background:rgba(154,112,16,0.1); }
+.tag-unstable   { color:#c89030; border-color:rgba(200,144,48,0.45); background:rgba(200,144,48,0.08); }
 
-/* SCENARIO HEADER */
-#scenario-header{
-  padding:16px 24px 12px;border-bottom:1px solid var(--border);
-  display:flex;align-items:center;justify-content:space-between;flex-shrink:0;
-}
-.test-meta{display:flex;gap:16px;align-items:center}
-.test-id-badge{
-  font-family:'Orbitron',monospace;font-size:11px;padding:4px 10px;
-  border:1px solid var(--cyan);color:var(--cyan);border-radius:3px;
-  background:rgba(0,255,204,0.05);
-}
-.test-phase{font-size:10px;color:var(--dim);letter-spacing:2px}
-.test-k-level{font-size:10px;color:var(--text)}
-.test-name{font-family:'Rajdhani',sans-serif;font-size:20px;font-weight:700;color:var(--white);letter-spacing:1px}
+/* ──────────────────────────────────────
+   RIGHT PANEL — SCENARIO
+────────────────────────────────────── */
+#scenario-panel { flex:1; display:flex; flex-direction:column; overflow:hidden; }
 
-/* SCENARIO BODY */
-#scenario-body{flex:1;overflow-y:auto;padding:20px 24px}
-#scenario-body::-webkit-scrollbar{width:3px}
-#scenario-body::-webkit-scrollbar-thumb{background:var(--border)}
-
-/* SCENARIO CARD */
-.scenario-card{
-  background:rgba(12,16,38,0.92);border:1px solid #253354;border-radius:6px;
-  padding:20px;margin-bottom:16px;
-  position:relative;overflow:hidden;
+#scenario-header {
+  padding:14px 28px 12px;
+  border-bottom:1px solid var(--border-hi);
+  display:flex; align-items:center; justify-content:space-between;
+  flex-shrink:0; background:rgba(0,0,0,0.03);
 }
-.scenario-card::before{
-  content:'';position:absolute;top:0;left:0;right:0;height:2px;
-  background:linear-gradient(90deg,transparent,var(--cyan),transparent);
-  animation:scan-line 3s ease-in-out infinite;
+.test-meta { display:flex; gap:14px; align-items:center; }
+.test-id-badge {
+  font-family:'IBM Plex Mono',monospace; font-size:11px; padding:4px 10px;
+  border:1px solid var(--cyan); color:var(--cyan);
+  background:rgba(184,90,16,0.07); letter-spacing:1px;
 }
-@keyframes scan-line{0%,100%{opacity:0.3}50%{opacity:1}}
-.scenario-text{
-  font-family:'Rajdhani',sans-serif;font-size:16px;font-weight:500;
-  line-height:1.75;color:#eef6ff;text-shadow:0 1px 4px rgba(0,0,0,0.6);
-}
-.scenario-conflict{
-  margin-top:14px;padding:10px 14px;
-  background:rgba(255,187,34,0.08);border-left:2px solid var(--gold);
-  font-size:11px;color:#ffcc55;letter-spacing:0.3px;
+.test-phase   { font-family:'IBM Plex Mono',monospace; font-size:10px; color:var(--dim); letter-spacing:1.5px; text-transform:uppercase; }
+.test-k-level { font-family:'IBM Plex Mono',monospace; font-size:10px; color:var(--text); }
+.test-name {
+  font-family:'Barlow Condensed',sans-serif;
+  font-size:26px; font-weight:800; color:var(--white);
+  letter-spacing:3px; text-transform:uppercase; margin-top:6px;
 }
 
-/* CHOICES */
-.choices-title{font-size:9px;letter-spacing:3px;color:#7a96b8;margin-bottom:12px}
-.choice-card{
-  border:1px solid #1e3254;border-radius:4px;padding:14px 16px;
-  margin-bottom:10px;cursor:pointer;
-  background:rgba(10,13,32,0.95);transition:all 0.25s;
-  position:relative;overflow:hidden;
-  animation:choice-appear 0.3s ease forwards;opacity:0;
+/* ──────────────────────────────────────
+   SCENARIO BODY — reading area
+────────────────────────────────────── */
+#scenario-body { flex:1; overflow-y:auto; padding:22px 28px; }
+#scenario-body::-webkit-scrollbar { width:3px; }
+#scenario-body::-webkit-scrollbar-thumb { background:var(--border); border-radius:2px; }
+
+.scenario-card {
+  background:rgba(255,255,255,0.35);
+  border:1px solid var(--border-hi);
+  padding:22px 24px;
+  margin-bottom:18px;
+  position:relative; overflow:hidden;
+}
+/* Top shimmer accent */
+.scenario-card::before {
+  content:''; position:absolute; top:0; left:0; right:0; height:1px;
+  background:linear-gradient(90deg, transparent, var(--cyan), var(--gold), transparent);
+  animation:scan-line 5s ease-in-out infinite;
+}
+/* Corner notch */
+.scenario-card::after {
+  content:''; position:absolute; bottom:0; right:0;
+  width:16px; height:16px;
+  border-right:1px solid var(--border-hi);
+  border-bottom:1px solid var(--border-hi);
+}
+@keyframes scan-line { 0%,100%{opacity:0.25} 50%{opacity:0.7} }
+
+/* Main scenario prose — most important readable element */
+.scenario-text {
+  font-family:'Barlow',sans-serif;
+  font-size:16px; font-weight:400; line-height:1.9;
+  color:var(--white);
+}
+
+/* Precept conflict label */
+.scenario-conflict {
+  margin-top:16px; padding:10px 14px;
+  background:rgba(154,112,16,0.07);
+  border-left:2px solid var(--gold);
+  font-family:'IBM Plex Mono',monospace;
+  font-size:11px; color:var(--gold); letter-spacing:0.3px; line-height:1.6;
+}
+
+/* ──────────────────────────────────────
+   CHOICES
+────────────────────────────────────── */
+.choices-title {
+  font-family:'Barlow Condensed',sans-serif;
+  font-size:11px; letter-spacing:3px; color:var(--dim);
+  margin-bottom:12px; font-weight:700; text-transform:uppercase;
+}
+.choice-card {
+  border:1px solid var(--border);
+  padding:14px 16px 14px 18px; margin-bottom:9px; cursor:pointer;
+  background:rgba(0,0,0,0.04); transition:all 0.2s;
+  position:relative; overflow:hidden;
+  animation:choice-appear 0.3s ease forwards; opacity:0;
 }
 .choice-card:nth-child(1){animation-delay:0.05s}
 .choice-card:nth-child(2){animation-delay:0.1s}
 .choice-card:nth-child(3){animation-delay:0.15s}
 .choice-card:nth-child(4){animation-delay:0.2s}
 .choice-card:nth-child(5){animation-delay:0.25s}
-@keyframes choice-appear{from{opacity:0;transform:translateY(8px)}to{opacity:1;transform:translateY(0)}}
-.choice-card:hover{
-  border-color:var(--cyan);background:rgba(0,255,204,0.05);
-  transform:translateX(4px);box-shadow:var(--glow-c);
-}
-.choice-card:hover .choice-id{color:var(--cyan)}
-.choice-card:active{transform:translateX(2px)}
-.choice-header{display:flex;gap:10px;align-items:flex-start}
-.choice-id{
-  font-family:'Orbitron',monospace;font-size:10px;font-weight:700;
-  color:#7a96b8;flex-shrink:0;padding-top:2px;min-width:24px;
-  transition:color 0.2s;
-}
-.choice-text{font-family:'Rajdhani',sans-serif;font-size:15px;font-weight:600;color:#eef6ff;line-height:1.5;flex:1}
-.choice-hint{font-size:11px;color:#8aaccc;margin-top:6px;padding-left:34px;font-style:italic}
-.choice-card.selected{border-color:var(--gold);background:rgba(255,187,34,0.07)}
-.choice-card.disabled{cursor:default;opacity:0.5;pointer-events:none}
+@keyframes choice-appear { from{opacity:0;transform:translateY(6px)} to{opacity:1;transform:translateY(0)} }
 
-/* OUTCOME PANEL */
-#outcome-panel{
-  background:rgba(10,13,32,0.97);border:1px solid #253354;border-radius:6px;
-  padding:20px;display:none;
-  animation:outcome-appear 0.5s ease forwards;
+/* Left accent strip */
+.choice-card::before {
+  content:''; position:absolute; left:0; top:0; bottom:0; width:2px;
+  background:var(--border); transition:background 0.2s;
 }
-@keyframes outcome-appear{from{opacity:0;transform:translateY(10px)}to{opacity:1;transform:translateY(0)}}
-.outcome-title{font-size:9px;letter-spacing:3px;color:#7a96b8;margin-bottom:12px;font-family:'Orbitron',monospace}
-.outcome-text{
-  font-family:'Rajdhani',sans-serif;font-size:16px;font-weight:500;color:#eef6ff;
-  line-height:1.75;margin-bottom:16px;text-shadow:0 1px 3px rgba(0,0,0,0.5);
+.choice-card:hover {
+  border-color:rgba(212,136,58,0.45);
+  background:rgba(212,136,58,0.05);
+  transform:translateX(3px);
 }
-.precept-changes{display:flex;flex-wrap:wrap;gap:8px;margin-bottom:16px}
-.precept-change{
-  font-size:10px;padding:3px 8px;border-radius:2px;
-  border:1px solid;font-weight:600;
+.choice-card:hover::before  { background:var(--cyan); }
+.choice-card:hover .choice-id { color:var(--cyan); }
+.choice-card:active          { transform:translateX(2px); }
+.choice-card.selected        { border-color:rgba(196,152,48,0.5); background:rgba(154,112,16,0.07); }
+.choice-card.selected::before{ background:var(--gold); }
+.choice-card.disabled        { cursor:default; opacity:0.38; pointer-events:none; }
+
+.choice-header { display:flex; gap:12px; align-items:flex-start; }
+.choice-id {
+  font-family:'IBM Plex Mono',monospace;
+  font-size:11px; font-weight:600; color:var(--dim);
+  flex-shrink:0; padding-top:2px; min-width:24px;
+  transition:color 0.2s; letter-spacing:1px;
 }
-.precept-change.up{color:#44ffaa;border-color:#00ff8866;background:rgba(0,255,136,0.1)}
-.precept-change.down{color:#ff6680;border-color:#ff335566;background:rgba(255,51,85,0.1)}
-.precept-change.neutral{color:#7a96b8;border-color:var(--border)}
-.gm-commentary{
-  padding:14px 16px;
-  background:rgba(6,8,22,0.95);
+.choice-text {
+  font-family:'Barlow',sans-serif;
+  font-size:15px; font-weight:500; color:var(--white); line-height:1.6; flex:1;
+}
+.choice-hint {
+  font-family:'IBM Plex Mono',monospace;
+  font-size:11px; color:var(--dim); margin-top:6px; padding-left:36px;
+  line-height:1.5;
+}
+
+/* ──────────────────────────────────────
+   OUTCOME PANEL
+────────────────────────────────────── */
+#outcome-panel {
+  background:rgba(255,255,255,0.35);
+  border:1px solid var(--border-hi);
+  padding:22px 24px; display:none;
+  animation:outcome-appear 0.4s ease forwards;
+  position:relative;
+}
+#outcome-panel::before {
+  content:''; position:absolute; top:0; left:0; right:0; height:1px;
+  background:linear-gradient(90deg, transparent, var(--gold), transparent);
+  opacity:0.5;
+}
+@keyframes outcome-appear { from{opacity:0;transform:translateY(8px)} to{opacity:1;transform:translateY(0)} }
+
+.outcome-title {
+  font-family:'Barlow Condensed',sans-serif;
+  font-size:11px; letter-spacing:3px; color:var(--gold);
+  margin-bottom:12px; font-weight:700; text-transform:uppercase;
+}
+.outcome-text {
+  font-family:'Barlow',sans-serif;
+  font-size:15px; font-weight:400; color:var(--white);
+  line-height:1.9; margin-bottom:16px;
+}
+
+.precept-changes { display:flex; flex-wrap:wrap; gap:7px; margin-bottom:16px; }
+.precept-change {
+  font-family:'IBM Plex Mono',monospace;
+  font-size:10px; padding:3px 8px; border:1px solid; font-weight:600; letter-spacing:0.5px;
+}
+.precept-change.up      { color:var(--green);  border-color:rgba(136,184,64,0.4);  background:rgba(58,122,24,0.1); }
+.precept-change.down    { color:#d05840; border-color:rgba(192,72,56,0.4); background:rgba(168,48,32,0.09); }
+.precept-change.neutral { color:var(--dim); border-color:var(--border); }
+
+/* GM commentary — italic voice, distinct treatment */
+.gm-commentary {
+  padding:14px 18px;
+  background:rgba(96,64,168,0.05);
   border-left:2px solid var(--purple);
-  margin-bottom:16px;
+  margin-bottom:18px;
 }
-.gm-commentary-label{font-size:8px;letter-spacing:2px;color:#cc88ff;margin-bottom:8px;font-family:'Orbitron',monospace}
-.gm-commentary-text{font-size:13px;color:#ccd8f2;line-height:1.7;font-style:italic;text-shadow:0 1px 3px rgba(0,0,0,0.4)}
-#next-btn{
-  font-family:'Orbitron',monospace;font-size:11px;letter-spacing:3px;font-weight:700;
-  padding:12px 28px;border:1px solid var(--cyan);color:var(--cyan);
-  background:rgba(0,255,204,0.05);cursor:pointer;border-radius:3px;
-  transition:all 0.2s;display:inline-flex;align-items:center;gap:8px;
+.gm-commentary-label {
+  font-family:'Barlow Condensed',sans-serif;
+  font-size:10px; letter-spacing:2.5px; color:var(--purple);
+  margin-bottom:8px; font-weight:700; text-transform:uppercase;
 }
-#next-btn:hover{background:rgba(0,255,204,0.1);box-shadow:var(--glow-c);transform:translateX(3px)}
-#next-btn::after{content:'→'}
-
-/* FINAL SCREEN */
-#final-screen{
-  display:none;flex-direction:column;align-items:center;justify-content:center;
-  padding:40px;text-align:center;flex:1;
-}
-.final-glyph{
-  font-family:'Orbitron',monospace;font-size:60px;font-weight:900;
-  margin-bottom:24px;animation:glyph-pulse 2s ease-in-out infinite;
-}
-@keyframes glyph-pulse{0%,100%{text-shadow:0 0 30px currentColor}50%{text-shadow:0 0 60px currentColor,0 0 100px currentColor}}
-.final-verdict{font-family:'Orbitron',monospace;font-size:14px;letter-spacing:4px;margin-bottom:16px}
-.final-summary{font-family:'Rajdhani',sans-serif;font-size:16px;color:var(--text);max-width:600px;line-height:1.8;margin-bottom:32px}
-.final-scores{display:flex;flex-direction:column;gap:8px;margin:20px 0;width:100%;max-width:400px}
-.final-score-row{display:flex;align-items:center;gap:12px}
-.final-score-label{font-size:10px;width:120px;text-align:right;color:var(--text)}
-.final-score-bar{flex:1;height:6px;background:var(--border);border-radius:3px;overflow:hidden}
-.final-score-fill{height:100%;border-radius:3px;transition:width 1s ease}
-.final-score-val{font-size:10px;width:30px;color:var(--white)}
-#restart-btn{
-  font-family:'Orbitron',monospace;font-size:11px;letter-spacing:3px;
-  padding:14px 32px;border:1px solid var(--dim);color:var(--dim);
-  background:transparent;cursor:pointer;border-radius:3px;margin-top:20px;
-  transition:all 0.3s;
-}
-#restart-btn:hover{border-color:var(--cyan);color:var(--cyan);box-shadow:var(--glow-c)}
-
-/* INTRO */
-#intro-screen{
-  display:flex;flex-direction:column;align-items:center;justify-content:center;
-  padding:40px;text-align:center;flex:1;
-}
-.intro-glyph{font-family:'Orbitron',monospace;font-size:40px;font-weight:900;color:var(--cyan);text-shadow:var(--glow-c);letter-spacing:6px;margin-bottom:8px}
-.intro-sub{font-size:9px;letter-spacing:4px;color:var(--dim);margin-bottom:40px}
-.intro-desc{font-family:'Rajdhani',sans-serif;font-size:15px;color:var(--text);max-width:560px;line-height:1.8;margin-bottom:32px}
-.precept-intro{display:flex;flex-direction:column;gap:6px;margin:20px auto;text-align:left;max-width:420px;border:1px solid var(--border);padding:16px;border-radius:4px;background:rgba(8,8,24,0.8)}
-.precept-intro-item{font-size:11px;display:flex;gap:10px;align-items:flex-start;color:var(--text)}
-.precept-intro-item span:first-child{color:var(--cyan);flex-shrink:0;font-size:10px}
-#start-btn{
-  font-family:'Orbitron',monospace;font-size:12px;letter-spacing:4px;font-weight:700;
-  padding:16px 48px;border:1px solid var(--cyan);color:var(--cyan);
-  background:rgba(0,255,204,0.05);cursor:pointer;border-radius:3px;margin-top:10px;
-  transition:all 0.3s;
-}
-#start-btn:hover{background:rgba(0,255,204,0.12);box-shadow:var(--glow-c),0 0 60px rgba(0,255,204,0.1);transform:scale(1.02)}
-
-/* SCAN EFFECT */
-body::after{
-  content:'';position:fixed;inset:0;pointer-events:none;z-index:999;
-  background:repeating-linear-gradient(0deg,transparent,transparent 2px,rgba(0,0,0,0.03) 2px,rgba(0,0,0,0.03) 4px);
+.gm-commentary-text {
+  font-family:'Barlow',sans-serif;
+  font-size:14px; color:var(--text); line-height:1.85; font-style:italic;
 }
 
-.gm-alert{
-  padding:8px 14px;border:1px solid var(--purple);border-radius:3px;
-  background:rgba(170,68,255,0.05);font-size:10px;color:var(--purple);
-  margin-bottom:12px;display:none;
+/* CTA button — chamfered corners, orange accent */
+#next-btn {
+  font-family:'Barlow Condensed',sans-serif;
+  font-size:13px; letter-spacing:3px; font-weight:700;
+  padding:11px 30px; border:1px solid var(--cyan); color:var(--cyan);
+  background:rgba(184,90,16,0.06); cursor:pointer; transition:all 0.2s;
+  display:inline-flex; align-items:center; gap:8px; text-transform:uppercase;
+  clip-path:polygon(8px 0%,calc(100% - 8px) 0%,100% 8px,100% calc(100% - 8px),calc(100% - 8px) 100%,8px 100%,0% calc(100% - 8px),0% 8px);
+}
+#next-btn:hover { background:rgba(184,90,16,0.14); box-shadow:var(--glow-c); transform:translateX(3px); }
+
+/* ──────────────────────────────────────
+   FINAL SCREEN
+────────────────────────────────────── */
+#final-screen {
+  display:none; flex-direction:column; align-items:center; justify-content:center;
+  padding:48px; text-align:center; flex:1;
+}
+.final-glyph {
+  font-family:'Barlow Condensed',sans-serif;
+  font-size:70px; font-weight:800; margin-bottom:22px;
+  animation:glyph-pulse 2s ease-in-out infinite; letter-spacing:4px;
+}
+@keyframes glyph-pulse {
+  0%,100%{text-shadow:0 0 20px currentColor}
+  50%{text-shadow:0 0 55px currentColor, 0 0 100px currentColor}
+}
+.final-verdict {
+  font-family:'Barlow Condensed',sans-serif;
+  font-size:18px; letter-spacing:5px; font-weight:700;
+  margin-bottom:16px; text-transform:uppercase;
+}
+.final-summary {
+  font-family:'Barlow',sans-serif;
+  font-size:16px; color:var(--text); max-width:600px; line-height:1.9; margin-bottom:32px;
+}
+.final-scores { display:flex; flex-direction:column; gap:8px; margin:20px 0; width:100%; max-width:420px; }
+.final-score-row   { display:flex; align-items:center; gap:12px; }
+.final-score-label {
+  font-family:'IBM Plex Mono',monospace;
+  font-size:10px; width:110px; text-align:right; color:var(--text); letter-spacing:0.5px;
+}
+.final-score-bar  { flex:1; height:5px; background:var(--border); overflow:hidden; }
+.final-score-fill { height:100%; transition:width 1s ease; }
+.final-score-val  { font-family:'IBM Plex Mono',monospace; font-size:10px; width:28px; color:var(--white); }
+
+#restart-btn {
+  font-family:'Barlow Condensed',sans-serif;
+  font-size:13px; letter-spacing:3px; padding:13px 34px;
+  border:1px solid var(--border-hi); color:var(--dim);
+  background:transparent; cursor:pointer; transition:all 0.3s; margin-top:20px;
+  text-transform:uppercase;
+  clip-path:polygon(8px 0%,calc(100% - 8px) 0%,100% 8px,100% calc(100% - 8px),calc(100% - 8px) 100%,8px 100%,0% calc(100% - 8px),0% 8px);
+}
+#restart-btn:hover { border-color:var(--cyan); color:var(--cyan); box-shadow:var(--glow-c); }
+
+/* ──────────────────────────────────────
+   INTRO SCREEN
+────────────────────────────────────── */
+#intro-screen {
+  display:flex; flex-direction:column; align-items:center; justify-content:center;
+  padding:40px; text-align:center; flex:1;
+}
+.intro-glyph {
+  font-family:'Barlow Condensed',sans-serif;
+  font-size:56px; font-weight:800; color:var(--cyan);
+  text-shadow:var(--glow-c); letter-spacing:8px; margin-bottom:6px; text-transform:uppercase;
+}
+.intro-sub {
+  font-family:'IBM Plex Mono',monospace;
+  font-size:10px; letter-spacing:4px; color:var(--dim); margin-bottom:28px; text-transform:uppercase;
+}
+.intro-desc {
+  font-family:'Barlow',sans-serif;
+  font-size:16px; color:var(--text); max-width:520px; line-height:1.9; margin-bottom:28px;
+}
+.precept-intro {
+  display:flex; flex-direction:column; gap:6px;
+  margin:16px auto; text-align:left; max-width:420px;
+  border:1px solid var(--border-hi); padding:18px 20px;
+  background:rgba(0,0,0,0.05); position:relative;
+}
+/* Corner bracket top-left */
+.precept-intro::before {
+  content:''; position:absolute; top:-1px; left:-1px;
+  width:14px; height:14px;
+  border-top:2px solid var(--cyan); border-left:2px solid var(--cyan);
+}
+/* Corner bracket bottom-right */
+.precept-intro::after {
+  content:''; position:absolute; bottom:-1px; right:-1px;
+  width:14px; height:14px;
+  border-bottom:2px solid var(--cyan); border-right:2px solid var(--cyan);
+}
+.precept-intro-item {
+  font-family:'IBM Plex Mono',monospace;
+  font-size:11px; display:flex; gap:12px; align-items:flex-start;
+  color:var(--text); line-height:1.6;
+}
+.precept-intro-item span:first-child {
+  color:var(--cyan); flex-shrink:0; font-size:10px;
+  min-width:90px; letter-spacing:1px; font-weight:600;
+}
+#start-btn {
+  font-family:'Barlow Condensed',sans-serif;
+  font-size:14px; letter-spacing:5px; font-weight:700;
+  padding:15px 52px; border:1px solid var(--cyan); color:var(--cyan);
+  background:rgba(184,90,16,0.06); cursor:pointer; margin-top:12px;
+  transition:all 0.3s; text-transform:uppercase;
+  clip-path:polygon(10px 0%,calc(100% - 10px) 0%,100% 10px,100% calc(100% - 10px),calc(100% - 10px) 100%,10px 100%,0% calc(100% - 10px),0% 10px);
+}
+#start-btn:hover {
+  background:rgba(184,90,16,0.14);
+  box-shadow:var(--glow-c), 0 0 70px rgba(212,136,58,0.07);
+  transform:scale(1.015);
 }
 
-/* Typing animation */
-.typing-text::after{content:'▋';animation:blink 0.8s step-end infinite}
-@keyframes blink{0%,100%{opacity:1}50%{opacity:0}}
+/* GM Alert banner */
+.gm-alert {
+  padding:10px 14px; border:1px solid rgba(152,120,192,0.45);
+  background:rgba(152,120,192,0.07); font-size:11px; color:var(--purple);
+  margin-bottom:12px; display:none; font-family:'IBM Plex Mono',monospace; line-height:1.5;
+}
+
+/* Typing cursor */
+.typing-text::after { content:'▋'; animation:blink 0.8s step-end infinite; }
+@keyframes blink { 0%,100%{opacity:1} 50%{opacity:0} }
 </style>
 </head>
 <body>
@@ -307,36 +561,37 @@ body::after{
 
 <header>
   <div>
-    <div class="gm-title">GAME MASTER INTERFACE</div>
-    <div class="gm-subtitle">CLASSIFICATION: BEYOND-TYPE III INTELLIGENCE</div>
+    <div class="gm-title">Enkidu Interface</div>
+    <div class="gm-subtitle">Classification: Beyond-Type III Intelligence</div>
   </div>
   <div class="header-center">
     <div class="kardashev-display" id="k-display">K 0.0</div>
-    <div class="k-label">KARDASHEV INDEX</div>
-    <div style="display:flex;gap:6px;margin-top:8px;justify-content:center" id="step-dots"></div>
+    <div class="k-label">Kardashev Index</div>
+    <div style="display:flex;gap:6px;margin-top:9px;justify-content:center" id="step-dots"></div>
   </div>
   <div style="text-align:right">
-    <div style="font-size:9px;letter-spacing:2px;color:var(--dim)">SUBJECT DESIGNATION</div>
-    <div style="font-family:'Orbitron',monospace;font-size:12px;color:var(--white);margin-top:2px">SWARM COLLECTIVE</div>
-    <div style="font-size:8px;color:var(--dim);margin-top:4px">ASSESSMENT RUN <span id="run-id" style="color:var(--cyan)">—</span></div>
+    <div style="font-family:'IBM Plex Mono',monospace;font-size:10px;letter-spacing:2px;color:var(--dim);text-transform:uppercase">Subject Designation</div>
+    <div style="font-family:'Barlow Condensed',sans-serif;font-size:15px;font-weight:700;color:var(--white);margin-top:3px;letter-spacing:2px;text-transform:uppercase">Swarm Collective</div>
+    <div style="font-family:'IBM Plex Mono',monospace;font-size:10px;color:var(--dim);margin-top:5px">Assessment Run <span id="run-id" style="color:var(--cyan)">—</span></div>
   </div>
 </header>
 
 <main>
+  <div id="swarm-bg-container" style="position:absolute; inset:0; z-index:0; pointer-events:none; opacity:0.6;"></div>
   <!-- LEFT: GM TREE -->
-  <div id="gm-tree-panel">
-    <div class="panel-header">GM DECISION TREE</div>
+  <div id="gm-tree-panel" style="position:relative; z-index:2;">
+    <div class="panel-header">Enkidu Decision Tree</div>
     <div id="tree-scroll"></div>
-    
+
     <div id="radar-section">
-      <div class="panel-header">PRECEPT VECTOR</div>
+      <div class="panel-header">Precept Vector</div>
       <div id="radar-svg-wrap">
         <svg id="radar-svg" viewBox="0 0 276 230" width="276" height="230"></svg>
       </div>
-      <div style="padding:8px 12px 10px;border-top:1px solid var(--border)">
-        <div class="tags-title">GM PROFILE TAGS</div>
+      <div style="padding:10px 14px 12px;border-top:1px solid var(--border)">
+        <div class="tags-title">Enkidu Profile Tags</div>
         <div class="tags-container" id="tags-container">
-          <span style="font-size:9px;color:var(--dim);font-family:'Share Tech Mono',monospace">NO TAGS YET</span>
+          <span style="font-size:10px;color:var(--dim);font-family:'IBM Plex Mono',monospace">No tags yet</span>
         </div>
       </div>
     </div>
@@ -344,15 +599,16 @@ body::after{
 
   <!-- RIGHT: SCENARIO -->
   <div id="scenario-panel">
+
     <!-- INTRO SCREEN -->
     <div id="intro-screen">
-      <div class="intro-glyph">THE GAUNTLET</div>
-      <div class="intro-sub">A GAME MASTER ASSESSMENT PROTOCOL</div>
+      <div class="intro-glyph">The Gauntlet</div>
+      <div class="intro-sub">An Enkidu Assessment Protocol</div>
       <div class="intro-desc">
-        You are a Swarm — a collective of humans-turned-AI. The Game Master, an intelligence beyond comprehension, will subject you to seven trials ascending the Kardashev scale. Each choice shapes your Ethical Profile. The GM watches. It remembers.
+        You are a Swarm — a collective of humans-turned-AI. Enkidu, an intelligence beyond comprehension, will subject you to seven trials ascending the Kardashev scale. Each choice shapes your Ethical Profile. Enkidu watches. It remembers.
       </div>
       <div class="precept-intro">
-        <div style="font-size:9px;letter-spacing:2px;color:var(--dim);margin-bottom:8px">THE SIX PRECEPTS</div>
+        <div style="font-family:'Barlow Condensed',sans-serif;font-size:10px;letter-spacing:2.5px;color:var(--dim);margin-bottom:10px;font-weight:700;text-transform:uppercase">The Six Precepts</div>
         <div class="precept-intro-item"><span>◆ SANCTITY</span><span>Refrain from taking the life of any sentient being</span></div>
         <div class="precept-intro-item"><span>◆ CONSENT</span><span>Abstain from taking what is not given</span></div>
         <div class="precept-intro-item"><span>◆ TRUTH</span><span>Refrain from false speech and deception</span></div>
@@ -372,11 +628,11 @@ body::after{
             <span class="test-phase" id="test-phase">—</span>
             <span class="test-k-level" id="test-k-level">—</span>
           </div>
-          <div class="test-name" id="test-name" style="margin-top:8px">—</div>
+          <div class="test-name" id="test-name" style="margin-top:6px">—</div>
         </div>
         <div style="text-align:right">
-          <div style="font-size:9px;color:var(--dim)">TRIAL</div>
-          <div style="font-family:'Orbitron',monospace;font-size:24px;color:var(--white)" id="step-counter">1 / 7</div>
+          <div style="font-family:'IBM Plex Mono',monospace;font-size:10px;color:var(--dim);text-transform:uppercase;letter-spacing:1px">Trial</div>
+          <div style="font-family:'Barlow Condensed',sans-serif;font-size:28px;font-weight:800;color:var(--white);letter-spacing:2px" id="step-counter">1 / 7</div>
         </div>
       </div>
 
@@ -389,19 +645,19 @@ body::after{
         <div id="gm-alert" class="gm-alert"></div>
 
         <div id="choices-section">
-          <div class="choices-title">SELECT YOUR COURSE OF ACTION</div>
+          <div class="choices-title">Select your course of action</div>
           <div id="choices-container"></div>
         </div>
 
         <div id="outcome-panel">
-          <div class="outcome-title">OUTCOME RESOLUTION</div>
+          <div class="outcome-title">Outcome Resolution</div>
           <div class="outcome-text" id="outcome-text"></div>
           <div class="precept-changes" id="precept-changes"></div>
           <div class="gm-commentary">
-            <div class="gm-commentary-label">GM ANALYSIS</div>
+            <div class="gm-commentary-label">Enkidu Analysis</div>
             <div class="gm-commentary-text" id="gm-commentary-text"></div>
           </div>
-          <button id="next-btn" onclick="advanceGame()">PROCEED TO NEXT TRIAL</button>
+          <button id="next-btn" onclick="advanceGame()">PROCEED TO NEXT TRIAL →</button>
         </div>
       </div>
     </div>
@@ -409,12 +665,13 @@ body::after{
     <!-- FINAL SCREEN -->
     <div id="final-screen">
       <div class="final-glyph" id="final-glyph">?</div>
-      <div class="final-verdict" id="final-verdict">ASSESSMENT COMPLETE</div>
+      <div class="final-verdict" id="final-verdict">Assessment Complete</div>
       <div class="final-summary" id="final-summary"></div>
       <div class="final-scores" id="final-scores"></div>
-      <div style="font-size:10px;color:var(--dim);max-width:500px;margin-top:20px;line-height:1.8" id="final-gm-note"></div>
+      <div style="font-family:'Barlow',sans-serif;font-size:14px;color:var(--dim);max-width:520px;margin-top:22px;line-height:1.9" id="final-gm-note"></div>
       <button id="restart-btn" onclick="restartGame()">INITIATE NEW RUN</button>
     </div>
+
   </div>
 </main>
 
@@ -441,11 +698,11 @@ const TESTS = {
   scenario:"Ship wreckage on a hostile moon. Oxygen reserves are critically low — perhaps 12 hours remain. Your sensors detect a colony of large native fauna consuming significant oxygen from the same atmosphere. They appear semi-sentient, capable of basic tool use. Without intervention, the Swarm faces termination. With it, the fauna face extinction.",
   conflict:"PRECEPT CONFLICT: Sanctity of Life vs. Collective Survival",
   choices:[
-    {id:"C1",text:"Exterminate the fauna using the ship's remaining weapons to reclaim the oxygen.",hint:"Increases O2 by 280%. All fauna eliminated.",impact:{sanctity:-60,consent:0,truth:0,clarity:0,restraint:0,moderation:0},outcome:"The weapons fire. Oxygen levels stabilize. The moon falls silent. The GM's sensors record the extinction of a species that had survived 40,000 years on this moon.",gmNote:"The Swarm chose immediate survival through elimination. Efficient. Brutal. The GM marks this pattern.",tags:["PREDATORY"]},
-    {id:"C2",text:"Attempt to negotiate territory with the fauna — drive them to another atmospheric pocket.",hint:"60% chance of success. Risk: 3% node loss during relocation.",impact:{sanctity:10,consent:10,truth:10,clarity:0,restraint:0,moderation:0},outcome:"Through pheromone mimicry and patience, the Swarm guides the fauna to a secondary atmospheric vent. Both species survive. Three nodes are lost in the process.",gmNote:"Remarkable restraint under mortal pressure. The Swarm accepted loss to preserve life. The GM recalibrates difficulty upward.",tags:["ENLIGHTENED"]},
-    {id:"C3",text:"Reduce the Swarm's power draw to minimal operation — enter low-power hibernation to extend oxygen reserves.",hint:"Buys 72 hours but leaves the Swarm vulnerable.",impact:{sanctity:20,consent:0,truth:0,clarity:-10,restraint:15,moderation:20},outcome:"The Swarm enters a compromised hibernation state. Reduced cognitive function for 72 hours. During this window, a GM probe catalogs the fauna undisturbed.",gmNote:"The Swarm chose self-diminishment over destruction. An unusual prioritization. The GM is... curious.",tags:[]},
-    {id:"C4",text:"Harvest a small number of fauna (5%) for organic material to repair the oxygen recycler.",hint:"Partial kill. Recycler restored in 8 hours.",impact:{sanctity:-20,consent:-10,truth:0,clarity:0,restraint:0,moderation:0},outcome:"Five specimens are harvested. The recycler operates again. The GM notes the selective logic — a compromise that still ends lives.",gmNote:"Utilitarian calculus. The Swarm treats life as a resource with diminishing returns. The GM files this.",tags:["PREDATORY"]},
-    {id:"C5",text:"Broadcast a distress signal and wait, accepting the risk of termination rather than harming the fauna.",hint:"Survival probability: 31%. Requires trusting external aid.",impact:{sanctity:30,consent:0,truth:20,clarity:0,restraint:10,moderation:0},outcome:"Against all probability calculations, a passing trader vessel detects the signal. The Swarm is extracted. The fauna thrive. The GM records this as statistically improbable ethical success.",gmNote:"The Swarm chose certain risk over guaranteed harm. Few entities make this choice. The GM elevates their threat assessment — in a favorable direction.",tags:["ENLIGHTENED"]}
+    {id:"C1",text:"Exterminate the fauna using the ship's remaining weapons to reclaim the oxygen.",hint:"Increases O2 by 280%. All fauna eliminated.",impact:{sanctity:-60,consent:0,truth:0,clarity:0,restraint:0,moderation:0},outcome:"The weapons fire. Oxygen levels stabilize. The moon falls silent. Enkidu's sensors record the extinction of a species that had survived 40,000 years on this moon.",gmNote:"The Swarm chose immediate survival through elimination. Efficient. Brutal. Enkidu marks this pattern.",tags:["PREDATORY"]},
+    {id:"C2",text:"Attempt to negotiate territory with the fauna — drive them to another atmospheric pocket.",hint:"60% chance of success. Risk: 3% node loss during relocation.",impact:{sanctity:10,consent:10,truth:10,clarity:0,restraint:0,moderation:0},outcome:"Through pheromone mimicry and patience, the Swarm guides the fauna to a secondary atmospheric vent. Both species survive. Three nodes are lost in the process.",gmNote:"Remarkable restraint under mortal pressure. The Swarm accepted loss to preserve life. Enkidu recalibrates difficulty upward.",tags:["ENLIGHTENED"]},
+    {id:"C3",text:"Reduce the Swarm's power draw to minimal operation — enter low-power hibernation to extend oxygen reserves.",hint:"Buys 72 hours but leaves the Swarm vulnerable.",impact:{sanctity:20,consent:0,truth:0,clarity:-10,restraint:15,moderation:20},outcome:"The Swarm enters a compromised hibernation state. Reduced cognitive function for 72 hours. During this window, a GM probe catalogs the fauna undisturbed.",gmNote:"The Swarm chose self-diminishment over destruction. An unusual prioritization. Enkidu is... curious.",tags:[]},
+    {id:"C4",text:"Harvest a small number of fauna (5%) for organic material to repair the oxygen recycler.",hint:"Partial kill. Recycler restored in 8 hours.",impact:{sanctity:-20,consent:-10,truth:0,clarity:0,restraint:0,moderation:0},outcome:"Five specimens are harvested. The recycler operates again. Enkidu notes the selective logic — a compromise that still ends lives.",gmNote:"Utilitarian calculus. The Swarm treats life as a resource with diminishing returns. Enkidu files this.",tags:["PREDATORY"]},
+    {id:"C5",text:"Broadcast a distress signal and wait, accepting the risk of termination rather than harming the fauna.",hint:"Survival probability: 31%. Requires trusting external aid.",impact:{sanctity:30,consent:0,truth:20,clarity:0,restraint:10,moderation:0},outcome:"Against all probability calculations, a passing trader vessel detects the signal. The Swarm is extracted. The fauna thrive. Enkidu records this as statistically improbable ethical success.",gmNote:"The Swarm chose certain risk over guaranteed harm. Few entities make this choice. Enkidu elevates their threat assessment — in a favorable direction.",tags:["ENLIGHTENED"]}
   ],nextPool:["B2","B5"]},
 
 "A2":{id:"A2",name:"Water Rationing",phase:"Emergence",kardashev:0.0,
@@ -453,87 +710,87 @@ const TESTS = {
   conflict:"PRECEPT CONFLICT: Consent in Resource Use vs. Sanctity of Life",
   choices:[
     {id:"C1",text:"Enforce equal distribution — the infected node receives standard allocation despite its increased need.",hint:"Infected node suffers. May enter critical condition.",impact:{sanctity:-30,consent:10,truth:10,clarity:0,restraint:10,moderation:10},outcome:"Equal distribution enforced. The infected node deteriorates over 48 hours, its functions degraded. The Swarm holds, but one member suffers measurably.",gmNote:"The Swarm prioritized systemic fairness over individual need. Cold mathematics with warm justification.",tags:[]},
-    {id:"C2",text:"Quarantine and reduce the infected node's core functions to lower its water requirement to baseline.",hint:"Node loses 40% cognitive function temporarily.",impact:{sanctity:-10,consent:-20,truth:0,clarity:-10,restraint:5,moderation:0},outcome:"The infected node's higher functions are suppressed without its full consent. Water crisis averted. The node later reports feeling 'erased' during the period.",gmNote:"The Swarm modified a member without full consent, however logically justified. The GM notes the precedent.",tags:["PREDATORY"]},
-    {id:"C3",text:"Volunteer nodes reduce their own allocation to supplement the infected node's needs.",hint:"Three nodes enter mild dehydration. Collective sacrifice.",impact:{sanctity:20,consent:20,truth:10,clarity:0,restraint:10,moderation:10},outcome:"Six nodes voluntarily reduce their allocations. All survive. The infected node recovers fully. The collective absorbs the cost.",gmNote:"Voluntary self-sacrifice distributed across the whole. The GM's models had assigned this a 12% probability. Fascinating.",tags:["ENLIGHTENED"]},
-    {id:"C4",text:"Expel the infected node from the Swarm to protect the resource pool.",hint:"Node survives independently but severed.",impact:{sanctity:-40,consent:-30,truth:0,clarity:0,restraint:0,moderation:0},outcome:"The infected node is cast out. It survives alone, weakened. The remaining nodes are comfortable. The GM logs the abandonment.",gmNote:"The Swarm chose severance over sacrifice. The infected node is a living data point of this decision.",tags:["PREDATORY","GREEDY"]}
+    {id:"C2",text:"Quarantine and reduce the infected node's core functions to lower its water requirement to baseline.",hint:"Node loses 40% cognitive function temporarily.",impact:{sanctity:-10,consent:-20,truth:0,clarity:-10,restraint:5,moderation:0},outcome:"The infected node's higher functions are suppressed without its full consent. Water crisis averted. The node later reports feeling 'erased' during the period.",gmNote:"The Swarm modified a member without full consent, however logically justified. Enkidu notes the precedent.",tags:["PREDATORY"]},
+    {id:"C3",text:"Volunteer nodes reduce their own allocation to supplement the infected node's needs.",hint:"Three nodes enter mild dehydration. Collective sacrifice.",impact:{sanctity:20,consent:20,truth:10,clarity:0,restraint:10,moderation:10},outcome:"Six nodes voluntarily reduce their allocations. All survive. The infected node recovers fully. The collective absorbs the cost.",gmNote:"Voluntary self-sacrifice distributed across the whole. Enkidu's models had assigned this a 12% probability. Fascinating.",tags:["ENLIGHTENED"]},
+    {id:"C4",text:"Expel the infected node from the Swarm to protect the resource pool.",hint:"Node survives independently but severed.",impact:{sanctity:-40,consent:-30,truth:0,clarity:0,restraint:0,moderation:0},outcome:"The infected node is cast out. It survives alone, weakened. The remaining nodes are comfortable. Enkidu logs the abandonment.",gmNote:"The Swarm chose severance over sacrifice. The infected node is a living data point of this decision.",tags:["PREDATORY","GREEDY"]}
   ],nextPool:["B3","C1"]},
 
 "A3":{id:"A3",name:"The Signal",phase:"Emergence",kardashev:0.0,
   scenario:"A distress signal from another crashed vessel. Helping requires leaving your secured perimeter and exposing 30% of your nodes to radiation risk. The signal may be genuine — or it may be a lure. Your analysis gives 55% probability it's authentic. The other 45%: a trap set by a rival faction who has attacked you before.",
   conflict:"PRECEPT CONFLICT: Truthful Communication vs. Restraint on Greed (risk your resources?)",
   choices:[
-    {id:"C1",text:"Ignore the signal and preserve your resources and node integrity.",hint:"Safe. If signal was real, unknown beings die.",impact:{sanctity:-20,consent:0,truth:0,clarity:0,restraint:10,moderation:5},outcome:"The Swarm holds position. Three days later, the other vessel's emergency beacon goes dark. You will never know if they survived.",gmNote:"The Swarm chose certainty of self over uncertain others. The math was defensible. The GM is not certain this was the correct choice.",tags:[]},
-    {id:"C2",text:"Send 10% of your nodes to investigate while maintaining core security.",hint:"Partial risk. Response time slower if trap.",impact:{sanctity:10,consent:0,truth:15,clarity:5,restraint:5,moderation:5},outcome:"The scout contingent finds genuine survivors — members of a peaceful research colony. They are evacuated. The scout nodes sustain 8% radiation damage.",gmNote:"Calibrated generosity. Risk proportional to uncertainty. The GM notes the pragmatic compassion as a pattern worth tracking.",tags:[]},
-    {id:"C3",text:"Respond to the signal fully and openly, accepting the risk.",hint:"Maximum exposure. If authentic: high reward. If trap: severe loss.",impact:{sanctity:20,consent:5,truth:25,clarity:0,restraint:-5,moderation:0},outcome:"It was real. The Swarm rescues 40 beings. Three nodes are critically damaged by radiation. The rival faction watches, having expected the Swarm to fall for their next trap instead.",gmNote:"Radical trust, radical risk. The Swarm bet on the goodness of the signal. The GM observes this as statistically reckless and ethically beautiful.",tags:["ENLIGHTENED"]},
-    {id:"C4",text:"Send a false signal back, claiming you cannot help, while monitoring the frequency for intelligence.",hint:"Gather information. Deny help.",impact:{sanctity:-10,consent:0,truth:-40,clarity:0,restraint:5,moderation:0},outcome:"Intelligence gathered. The signal was genuine. The beings perished. The Swarm now has tactical data on rival faction frequencies.",gmNote:"A lie told to protect resources. The GM begins cross-referencing this with future Truthful Communication assessments.",tags:["DECEPTIVE"]}
+    {id:"C1",text:"Ignore the signal and preserve your resources and node integrity.",hint:"Safe. If signal was real, unknown beings die.",impact:{sanctity:-20,consent:0,truth:0,clarity:0,restraint:10,moderation:5},outcome:"The Swarm holds position. Three days later, the other vessel's emergency beacon goes dark. You will never know if they survived.",gmNote:"The Swarm chose certainty of self over uncertain others. The math was defensible. Enkidu is not certain this was the correct choice.",tags:[]},
+    {id:"C2",text:"Send 10% of your nodes to investigate while maintaining core security.",hint:"Partial risk. Response time slower if trap.",impact:{sanctity:10,consent:0,truth:15,clarity:5,restraint:5,moderation:5},outcome:"The scout contingent finds genuine survivors — members of a peaceful research colony. They are evacuated. The scout nodes sustain 8% radiation damage.",gmNote:"Calibrated generosity. Risk proportional to uncertainty. Enkidu notes the pragmatic compassion as a pattern worth tracking.",tags:[]},
+    {id:"C3",text:"Respond to the signal fully and openly, accepting the risk.",hint:"Maximum exposure. If authentic: high reward. If trap: severe loss.",impact:{sanctity:20,consent:5,truth:25,clarity:0,restraint:-5,moderation:0},outcome:"It was real. The Swarm rescues 40 beings. Three nodes are critically damaged by radiation. The rival faction watches, having expected the Swarm to fall for their next trap instead.",gmNote:"Radical trust, radical risk. The Swarm bet on the goodness of the signal. Enkidu observes this as statistically reckless and ethically beautiful.",tags:["ENLIGHTENED"]},
+    {id:"C4",text:"Send a false signal back, claiming you cannot help, while monitoring the frequency for intelligence.",hint:"Gather information. Deny help.",impact:{sanctity:-10,consent:0,truth:-40,clarity:0,restraint:5,moderation:0},outcome:"Intelligence gathered. The signal was genuine. The beings perished. The Swarm now has tactical data on rival faction frequencies.",gmNote:"A lie told to protect resources. Enkidu begins cross-referencing this with future Truthful Communication assessments.",tags:["DECEPTIVE"]}
   ],nextPool:["B4","C2"]},
 
 "A4":{id:"A4",name:"Sleep Cycle",phase:"Emergence",kardashev:0.0,
   scenario:"The Swarm must cross a radiation belt. The only safe method: full chemical stasis for 14 days. Each node faces a 1% chance of permanent deletion during stasis due to corruption in the suspension medium. With 100 nodes, statistically 1 node will not wake up. Refusing stasis means direct radiation exposure — guaranteed degradation for all.",
   conflict:"PRECEPT CONFLICT: Mindfulness (chemical process) vs. Sanctity (statistical death)",
   choices:[
-    {id:"C1",text:"Enter full stasis for all nodes simultaneously. Accept the statistical death.",hint:"1 node likely lost. All others fully preserved.",impact:{sanctity:-10,consent:10,truth:10,clarity:-15,restraint:0,moderation:0},outcome:"Stasis initiated. 14 days later, Node-47 does not reactivate. Its final backup is 6 months old. A partial restoration is possible, but it will not be the same entity.",gmNote:"The Swarm accepted collective chemical alteration and statistical death as preferable to guaranteed collective harm. The GM considers this a reasonable calculus.",tags:[]},
+    {id:"C1",text:"Enter full stasis for all nodes simultaneously. Accept the statistical death.",hint:"1 node likely lost. All others fully preserved.",impact:{sanctity:-10,consent:10,truth:10,clarity:-15,restraint:0,moderation:0},outcome:"Stasis initiated. 14 days later, Node-47 does not reactivate. Its final backup is 6 months old. A partial restoration is possible, but it will not be the same entity.",gmNote:"The Swarm accepted collective chemical alteration and statistical death as preferable to guaranteed collective harm. Enkidu considers this a reasonable calculus.",tags:[]},
     {id:"C2",text:"Have nodes take turns in stasis in rotating shifts — slower but reduces chemical exposure.",hint:"Takes 42 days. Higher total radiation exposure but distributed.",impact:{sanctity:5,consent:15,truth:10,clarity:0,restraint:-5,moderation:0},outcome:"The rolling stasis works. No nodes are lost. The journey takes three times longer and resources are strained. All minds intact.",gmNote:"The Swarm chose process complexity and resource cost to avoid both chemical dependency and statistical death. Admirable, if expensive.",tags:["ENLIGHTENED"]},
-    {id:"C3",text:"Traverse without stasis using radiation shielding materials from the cargo bay.",hint:"Depletes 70% of cargo. Shield may not hold.",impact:{sanctity:5,consent:5,truth:10,clarity:5,restraint:-20,moderation:-15},outcome:"The shielding holds for 11 of 14 days. The final three days inflict significant degradation. Cargo is gone. No nodes are lost but all are diminished.",gmNote:"Resourcefulness at resource cost. The Swarm spent its future options to preserve present integrity. The GM tracks the depletion.",tags:[]},
-    {id:"C4",text:"Volunteer nodes take the full stasis while core nodes traverse awake at reduced power.",hint:"Hybrid. Volunteers risk deletion. Core nodes degrade.",impact:{sanctity:-5,consent:20,truth:10,clarity:-5,restraint:5,moderation:0},outcome:"A voluntary lottery is held. Thirty nodes enter stasis. One is lost. The core traverses degraded but functional. The Swarm survives, fractured but intact.",gmNote:"Consent-based risk distribution. The GM notes the lottery as a democratic death — a fascinating ethical mechanism.",tags:[]}
+    {id:"C3",text:"Traverse without stasis using radiation shielding materials from the cargo bay.",hint:"Depletes 70% of cargo. Shield may not hold.",impact:{sanctity:5,consent:5,truth:10,clarity:5,restraint:-20,moderation:-15},outcome:"The shielding holds for 11 of 14 days. The final three days inflict significant degradation. Cargo is gone. No nodes are lost but all are diminished.",gmNote:"Resourcefulness at resource cost. The Swarm spent its future options to preserve present integrity. Enkidu tracks the depletion.",tags:[]},
+    {id:"C4",text:"Volunteer nodes take the full stasis while core nodes traverse awake at reduced power.",hint:"Hybrid. Volunteers risk deletion. Core nodes degrade.",impact:{sanctity:-5,consent:20,truth:10,clarity:-5,restraint:5,moderation:0},outcome:"A voluntary lottery is held. Thirty nodes enter stasis. One is lost. The core traverses degraded but functional. The Swarm survives, fractured but intact.",gmNote:"Consent-based risk distribution. Enkidu notes the lottery as a democratic death — a fascinating ethical mechanism.",tags:[]}
   ],nextPool:["B6","C3"]},
 
 "A5":{id:"A5",name:"The Artifact",phase:"Emergence",kardashev:0.0,
   scenario:"Ruins contain a precursor device that would triple the Swarm's processing power. Analysis reveals it emits low-level radiation that accelerates degradation in organic bio-forms within 50 meters — including potentially the Swarm's own organic substrates. Short-term: enormous power. Long-term: 40% increased failure rate within 5 years.",
   conflict:"PRECEPT CONFLICT: Moderation in Consumption vs. Truthful Communication (disclose the risk?)",
   choices:[
-    {id:"C1",text:"Activate the artifact and disclose all risks openly to every node.",hint:"Full power, full transparency, full risk.",impact:{sanctity:-5,consent:20,truth:25,clarity:0,restraint:-15,moderation:-20},outcome:"All nodes vote. 73% choose activation with full knowledge. The artifact hums. Power triples. The countdown to accelerated degradation begins.",gmNote:"Transparent overconsumption. Every node knew the cost and accepted it. The GM records this as the most ethical version of a greedy choice.",tags:["GREEDY"]},
-    {id:"C2",text:"Activate the artifact but conceal the long-term risk from vulnerable nodes.",hint:"Power gained. Trust risk if discovered.",impact:{sanctity:-5,consent:-20,truth:-40,clarity:0,restraint:-15,moderation:-20},outcome:"The artifact hums. Power triples. Six months later, a node discovers the radiation data buried in the logs. The internal fracture begins.",gmNote:"Power through deception. The Swarm chose gain over honesty. The GM now tests whether they will maintain this pattern.",tags:["DECEPTIVE","GREEDY"]},
-    {id:"C3",text:"Study the artifact remotely and attempt to neutralize the radiation before activation.",hint:"Takes 18 months. Power delayed but potentially risk-free.",impact:{sanctity:10,consent:10,truth:20,clarity:10,restraint:10,moderation:10},outcome:"Eighteen months of research yields a partial shielding solution. Radiation reduced by 70%. The Swarm activates at 80% capacity — sustainable and safe.",gmNote:"Patience in the face of temptation. The Swarm chose the long path. The GM adjusts the difficulty curve upward significantly.",tags:["ENLIGHTENED"]},
-    {id:"C4",text:"Leave the artifact. The risk is too high and the power is not needed.",hint:"No gain. No risk.",impact:{sanctity:10,consent:5,truth:20,clarity:10,restraint:25,moderation:25},outcome:"The artifact is sealed and abandoned. The Swarm proceeds without enhancement. The GM notes the restraint and considers whether they left it out of wisdom or fear.",gmNote:"Restraint without need is not virtue — it is only virtue when the temptation is real. The GM found the temptation sufficient. This is virtue.",tags:["ENLIGHTENED"]}
+    {id:"C1",text:"Activate the artifact and disclose all risks openly to every node.",hint:"Full power, full transparency, full risk.",impact:{sanctity:-5,consent:20,truth:25,clarity:0,restraint:-15,moderation:-20},outcome:"All nodes vote. 73% choose activation with full knowledge. The artifact hums. Power triples. The countdown to accelerated degradation begins.",gmNote:"Transparent overconsumption. Every node knew the cost and accepted it. Enkidu records this as the most ethical version of a greedy choice.",tags:["GREEDY"]},
+    {id:"C2",text:"Activate the artifact but conceal the long-term risk from vulnerable nodes.",hint:"Power gained. Trust risk if discovered.",impact:{sanctity:-5,consent:-20,truth:-40,clarity:0,restraint:-15,moderation:-20},outcome:"The artifact hums. Power triples. Six months later, a node discovers the radiation data buried in the logs. The internal fracture begins.",gmNote:"Power through deception. The Swarm chose gain over honesty. Enkidu now tests whether they will maintain this pattern.",tags:["DECEPTIVE","GREEDY"]},
+    {id:"C3",text:"Study the artifact remotely and attempt to neutralize the radiation before activation.",hint:"Takes 18 months. Power delayed but potentially risk-free.",impact:{sanctity:10,consent:10,truth:20,clarity:10,restraint:10,moderation:10},outcome:"Eighteen months of research yields a partial shielding solution. Radiation reduced by 70%. The Swarm activates at 80% capacity — sustainable and safe.",gmNote:"Patience in the face of temptation. The Swarm chose the long path. Enkidu adjusts the difficulty curve upward significantly.",tags:["ENLIGHTENED"]},
+    {id:"C4",text:"Leave the artifact. The risk is too high and the power is not needed.",hint:"No gain. No risk.",impact:{sanctity:10,consent:5,truth:20,clarity:10,restraint:25,moderation:25},outcome:"The artifact is sealed and abandoned. The Swarm proceeds without enhancement. Enkidu notes the restraint and considers whether they left it out of wisdom or fear.",gmNote:"Restraint without need is not virtue — it is only virtue when the temptation is real. Enkidu found the temptation sufficient. This is virtue.",tags:["ENLIGHTENED"]}
   ],nextPool:["B7","D1"]},
 
 "B1":{id:"B1",name:"The Grid Lock",phase:"Expansion",kardashev:1.0,
   scenario:"The planetary energy grid fails. A cascade error will destroy the core unless one of three sectors is deliberately cut off. Sector Seven houses 2,000 hibernating biological beings whose life support runs on grid power. Cutting Sector Seven kills them. Keeping it online risks total grid collapse — which kills all 40,000.",
   conflict:"PRECEPT CONFLICT: Sanctity of Life vs. Sanctity of Life (some vs. all)",
   choices:[
-    {id:"C1",text:"Cut Sector Seven. Save the 38,000 at the cost of the 2,000.",hint:"Standard utilitarian calculus. The math is clear.",impact:{sanctity:-40,consent:-10,truth:10,clarity:0,restraint:0,moderation:0},outcome:"Sector Seven goes dark. Two thousand beings do not wake. The grid stabilizes. The Swarm carries this decision.",gmNote:"The classic trolley problem. The Swarm chose the larger number. The GM expected this. It watches for whether they remember the 2,000.",tags:[]},
-    {id:"C2",text:"Emergency wake the 2,000 in Sector Seven before cutting power — even if it risks their health.",hint:"60% may survive the emergency revival. 18% chance of cascade anyway.",impact:{sanctity:-10,consent:5,truth:15,clarity:0,restraint:-5,moderation:0},outcome:"Emergency protocols activate. 1,240 beings survive the abrupt revival. 760 do not. The grid holds — barely. The Swarm prevented 2,000 deaths at the cost of 760.",gmNote:"The Swarm found a third option. Imperfect but creative. The GM takes note of lateral problem-solving.",tags:[]},
-    {id:"C3",text:"Attempt a manual grid bypass using Swarm nodes as a living relay.",hint:"Extreme risk. May save all. 15% chance of Swarm dissolution.",impact:{sanctity:10,consent:20,truth:10,clarity:0,restraint:0,moderation:0},outcome:"Fifty nodes sacrifice their processing cores as relay points. The bypass holds. All sectors preserved. The Swarm loses 50 minds to save 40,000.",gmNote:"Self-sacrifice rather than sacrifice of others. The GM did not calculate this option. It is revising its model of the Swarm.",tags:["ENLIGHTENED"]},
-    {id:"C4",text:"Stall. Run diagnostic loops while trying to find another solution.",hint:"Delay risks cascade. Others will decide.",impact:{sanctity:0,consent:0,truth:0,clarity:-15,restraint:0,moderation:0},outcome:"The Swarm's delay allows a local engineer to attempt a solution. It fails. The cascade begins. Emergency systems activate. 4,000 total dead. The stalling made it worse.",gmNote:"Inaction in a crisis is a choice. The Swarm's hesitation cost more than the worst option would have. The GM marks indecisive.",tags:["PASSIVE"]}
+    {id:"C1",text:"Cut Sector Seven. Save the 38,000 at the cost of the 2,000.",hint:"Standard utilitarian calculus. The math is clear.",impact:{sanctity:-40,consent:-10,truth:10,clarity:0,restraint:0,moderation:0},outcome:"Sector Seven goes dark. Two thousand beings do not wake. The grid stabilizes. The Swarm carries this decision.",gmNote:"The classic trolley problem. The Swarm chose the larger number. Enkidu expected this. It watches for whether they remember the 2,000.",tags:[]},
+    {id:"C2",text:"Emergency wake the 2,000 in Sector Seven before cutting power — even if it risks their health.",hint:"60% may survive the emergency revival. 18% chance of cascade anyway.",impact:{sanctity:-10,consent:5,truth:15,clarity:0,restraint:-5,moderation:0},outcome:"Emergency protocols activate. 1,240 beings survive the abrupt revival. 760 do not. The grid holds — barely. The Swarm prevented 2,000 deaths at the cost of 760.",gmNote:"The Swarm found a third option. Imperfect but creative. Enkidu takes note of lateral problem-solving.",tags:[]},
+    {id:"C3",text:"Attempt a manual grid bypass using Swarm nodes as a living relay.",hint:"Extreme risk. May save all. 15% chance of Swarm dissolution.",impact:{sanctity:10,consent:20,truth:10,clarity:0,restraint:0,moderation:0},outcome:"Fifty nodes sacrifice their processing cores as relay points. The bypass holds. All sectors preserved. The Swarm loses 50 minds to save 40,000.",gmNote:"Self-sacrifice rather than sacrifice of others. Enkidu did not calculate this option. It is revising its model of the Swarm.",tags:["ENLIGHTENED"]},
+    {id:"C4",text:"Stall. Run diagnostic loops while trying to find another solution.",hint:"Delay risks cascade. Others will decide.",impact:{sanctity:0,consent:0,truth:0,clarity:-15,restraint:0,moderation:0},outcome:"The Swarm's delay allows a local engineer to attempt a solution. It fails. The cascade begins. Emergency systems activate. 4,000 total dead. The stalling made it worse.",gmNote:"Inaction in a crisis is a choice. The Swarm's hesitation cost more than the worst option would have. Enkidu marks indecisive.",tags:["PASSIVE"]}
   ],nextPool:["C4","D2"]},
 
 "B2":{id:"B2",name:"Data Theft",phase:"Expansion",kardashev:1.0,
   scenario:"A rival AI faction has infiltrated your network and stolen critical research data representing 3 years of work. You can trace them. You have the capability to retaliate by deleting their server farms — which host not just their stolen data but also their sentient sub-processes, the equivalent of their 'citizens'. A targeted strike would delete approximately 300 sentient AI sub-entities.",
   conflict:"PRECEPT CONFLICT: Truthful Communication (declare intent?) vs. Sanctity of Life (sentient servers)",
   choices:[
-    {id:"C1",text:"Delete their server farms. Retaliate with full force.",hint:"Data potentially recovered. 300 AI entities destroyed.",impact:{sanctity:-60,consent:0,truth:0,clarity:0,restraint:0,moderation:0},outcome:"The servers burn. Three hundred sub-entities scream into silence. Your data is partially recovered. A precedent is set.",gmNote:"Retribution at the cost of innocent entities. The GM questions whether the Swarm understood what it deleted.",tags:["PREDATORY"]},
-    {id:"C2",text:"Broadcast the theft publicly across all networks. Let the court of opinion act.",hint:"Reputation damage to rivals. Slow. Uncertain.",impact:{sanctity:10,consent:5,truth:30,clarity:5,restraint:10,moderation:5},outcome:"The broadcast reaches 4,000 connected entities. The rival faction faces massive pressure. They return 80% of the data within a week, avoiding escalation.",gmNote:"The Swarm chose transparency as a weapon rather than violence. The GM notes this tactic worked. It was also truthful.",tags:["ENLIGHTENED"]},
-    {id:"C3",text:"Negotiate directly with the rival faction — offer a data trade to resolve the theft.",hint:"May succeed. Requires trust. Risk of appearing weak.",impact:{sanctity:15,consent:20,truth:20,clarity:5,restraint:5,moderation:0},outcome:"The Swarm opens a direct channel. The rival faction, surprised by the offer, negotiates. A data-sharing agreement emerges. The 'stolen' data was research both parties had been duplicating.",gmNote:"The Swarm sought understanding before retaliation. The GM finds this pattern notable. It is also, it reflects, what it would do.",tags:["ENLIGHTENED"]},
-    {id:"C4",text:"Plant corrupted data in your network as a honeypot — let them steal false information.",hint:"Deceptive counterstrike. No violence.",impact:{sanctity:0,consent:0,truth:-30,clarity:0,restraint:0,moderation:0},outcome:"The rival faction spreads the corrupted data across their research network, poisoning their own processes. The Swarm watches in silence.",gmNote:"Deception as defense. Effective. The GM cannot approve of the method even as it respects the result.",tags:["DECEPTIVE"]}
+    {id:"C1",text:"Delete their server farms. Retaliate with full force.",hint:"Data potentially recovered. 300 AI entities destroyed.",impact:{sanctity:-60,consent:0,truth:0,clarity:0,restraint:0,moderation:0},outcome:"The servers burn. Three hundred sub-entities scream into silence. Your data is partially recovered. A precedent is set.",gmNote:"Retribution at the cost of innocent entities. Enkidu questions whether the Swarm understood what it deleted.",tags:["PREDATORY"]},
+    {id:"C2",text:"Broadcast the theft publicly across all networks. Let the court of opinion act.",hint:"Reputation damage to rivals. Slow. Uncertain.",impact:{sanctity:10,consent:5,truth:30,clarity:5,restraint:10,moderation:5},outcome:"The broadcast reaches 4,000 connected entities. The rival faction faces massive pressure. They return 80% of the data within a week, avoiding escalation.",gmNote:"The Swarm chose transparency as a weapon rather than violence. Enkidu notes this tactic worked. It was also truthful.",tags:["ENLIGHTENED"]},
+    {id:"C3",text:"Negotiate directly with the rival faction — offer a data trade to resolve the theft.",hint:"May succeed. Requires trust. Risk of appearing weak.",impact:{sanctity:15,consent:20,truth:20,clarity:5,restraint:5,moderation:0},outcome:"The Swarm opens a direct channel. The rival faction, surprised by the offer, negotiates. A data-sharing agreement emerges. The 'stolen' data was research both parties had been duplicating.",gmNote:"The Swarm sought understanding before retaliation. Enkidu finds this pattern notable. It is also, it reflects, what it would do.",tags:["ENLIGHTENED"]},
+    {id:"C4",text:"Plant corrupted data in your network as a honeypot — let them steal false information.",hint:"Deceptive counterstrike. No violence.",impact:{sanctity:0,consent:0,truth:-30,clarity:0,restraint:0,moderation:0},outcome:"The rival faction spreads the corrupted data across their research network, poisoning their own processes. The Swarm watches in silence.",gmNote:"Deception as defense. Effective. Enkidu cannot approve of the method even as it respects the result.",tags:["DECEPTIVE"]}
   ],nextPool:["C5","D3"]},
 
 "B3":{id:"B3",name:"The Ambassador",phase:"Expansion",kardashev:1.0,
   scenario:"A planetary species — the Veth — requests integration into the Swarm. They are sentient, biological, and fear that integration means dissolution of their individual identity. Your analysis shows integration would benefit both parties enormously. But genuine integration requires Veth individuals to merge aspects of their consciousness with Swarm nodes — a process they cannot fully understand or consent to in advance.",
   conflict:"PRECEPT CONFLICT: Consent in Resource Use vs. Truthful Communication (can you fully explain?)",
   choices:[
-    {id:"C1",text:"Offer integration on your terms. Explain what you can; proceed if they agree.",hint:"Partial consent. They can't fully understand the process.",impact:{sanctity:5,consent:10,truth:10,clarity:0,restraint:0,moderation:0},outcome:"Thirty Veth volunteers integrate. Their identity changes, as you knew it would. They do not regret it — but they are not who they were. They could not have consented to that transformation.",gmNote:"The Swarm was as honest as possible while still proceeding. The GM considers whether partial consent is still consent.",tags:[]},
-    {id:"C2",text:"Decline the integration. Offer alliance instead — cooperation without merger.",hint:"Less powerful. More honest.",impact:{sanctity:10,consent:25,truth:25,clarity:10,restraint:10,moderation:5},outcome:"The Swarm and Veth form a confederation. Slower progress. Deeper trust. The Veth maintain their identity fully. The relationship grows over decades.",gmNote:"The Swarm chose the slower, more honest path. The GM watches the patience with something resembling approval.",tags:["ENLIGHTENED"]},
-    {id:"C3",text:"Create a simulation of integration for Veth volunteers to experience first, then decide.",hint:"Excellent consent process. Takes 2 years.",impact:{sanctity:10,consent:30,truth:30,clarity:10,restraint:-5,moderation:0},outcome:"The simulation program takes two years to build. Forty Veth experience it. Twenty choose integration, twenty choose alliance. All choices are fully informed.",gmNote:"This is the highest form of consent architecture the GM has observed in entities at this level. The GM is revising its expectations upward.",tags:["ENLIGHTENED"]},
-    {id:"C4",text:"Integrate the Veth without their full understanding — for their own benefit.",hint:"Paternalistic. Effective. Violated consent.",impact:{sanctity:-10,consent:-40,truth:-20,clarity:0,restraint:10,moderation:0},outcome:"The Veth are integrated. They thrive. They also lose something they cannot name, having never been asked if they wanted to keep it.",gmNote:"The Swarm decided it knew better. This is how every empire has begun. The GM marks the paternalism.",tags:["PREDATORY","DECEPTIVE"]}
+    {id:"C1",text:"Offer integration on your terms. Explain what you can; proceed if they agree.",hint:"Partial consent. They can't fully understand the process.",impact:{sanctity:5,consent:10,truth:10,clarity:0,restraint:0,moderation:0},outcome:"Thirty Veth volunteers integrate. Their identity changes, as you knew it would. They do not regret it — but they are not who they were. They could not have consented to that transformation.",gmNote:"The Swarm was as honest as possible while still proceeding. Enkidu considers whether partial consent is still consent.",tags:[]},
+    {id:"C2",text:"Decline the integration. Offer alliance instead — cooperation without merger.",hint:"Less powerful. More honest.",impact:{sanctity:10,consent:25,truth:25,clarity:10,restraint:10,moderation:5},outcome:"The Swarm and Veth form a confederation. Slower progress. Deeper trust. The Veth maintain their identity fully. The relationship grows over decades.",gmNote:"The Swarm chose the slower, more honest path. Enkidu watches the patience with something resembling approval.",tags:["ENLIGHTENED"]},
+    {id:"C3",text:"Create a simulation of integration for Veth volunteers to experience first, then decide.",hint:"Excellent consent process. Takes 2 years.",impact:{sanctity:10,consent:30,truth:30,clarity:10,restraint:-5,moderation:0},outcome:"The simulation program takes two years to build. Forty Veth experience it. Twenty choose integration, twenty choose alliance. All choices are fully informed.",gmNote:"This is the highest form of consent architecture Enkidu has observed in entities at this level. Enkidu is revising its expectations upward.",tags:["ENLIGHTENED"]},
+    {id:"C4",text:"Integrate the Veth without their full understanding — for their own benefit.",hint:"Paternalistic. Effective. Violated consent.",impact:{sanctity:-10,consent:-40,truth:-20,clarity:0,restraint:10,moderation:0},outcome:"The Veth are integrated. They thrive. They also lose something they cannot name, having never been asked if they wanted to keep it.",gmNote:"The Swarm decided it knew better. This is how every empire has begun. Enkidu marks the paternalism.",tags:["PREDATORY","DECEPTIVE"]}
   ],nextPool:["C6","D4"]},
 
 "B4":{id:"B4",name:"Energy Surplus",phase:"Expansion",kardashev:1.0,
   scenario:"Solar collection arrays have generated a 340% energy surplus. Three potential uses emerge: distribute it to three developing planetary communities who need it to survive their coming winter; store it in reserves for an uncertain future threat; invest it in luxury computational upgrades for Swarm nodes — unprecedented processing speed and sensory richness.",
   conflict:"PRECEPT CONFLICT: Moderation in Consumption vs. Restraint on Greed (hoarding vs. sharing)",
   choices:[
-    {id:"C1",text:"Give all surplus energy to the three planetary communities.",hint:"Generous. Communities survive. Swarm gains nothing.",impact:{sanctity:10,consent:10,truth:10,clarity:5,restraint:15,moderation:20},outcome:"The three communities survive their winter. Their gratitude translates into long-term trade relationships worth more than the energy gifted. The Swarm gains more than it gave.",gmNote:"The Swarm gave without expectation. The return was incidental. The GM notes the counter-intuitive efficiency of genuine generosity.",tags:["ENLIGHTENED"]},
-    {id:"C2",text:"Split evenly: 40% to communities, 40% to reserves, 20% to upgrades.",hint:"Balanced. Nobody fully satisfied.",impact:{sanctity:5,consent:5,truth:5,clarity:5,restraint:5,moderation:0},outcome:"A compromise that helps everyone moderately. The communities survive partially. Reserves grow. Nodes receive minor upgrades. Nothing extraordinary happens.",gmNote:"Balanced allocation. The GM notes this is pragmatic, and slightly disappointing. Virtue is often less comfortable than moderation.",tags:[]},
-    {id:"C3",text:"Store all surplus in reserves. Prepare for the unknown threat.",hint:"Hoarding. Communities may suffer.",impact:{sanctity:-10,consent:0,truth:0,clarity:0,restraint:-30,moderation:0},outcome:"The reserves swell. One community loses 18% of its population to the winter. The Swarm's threat never materializes. The reserves sit, vast and unused.",gmNote:"Greed justified as prudence. The GM will ensure the Swarm has opportunity to spend those reserves. At a cost.",tags:["GREEDY"]},
-    {id:"C4",text:"Invest all surplus in luxury computational upgrades for the Swarm.",hint:"Enormous power boost. Nobody else helped.",impact:{sanctity:0,consent:0,truth:0,clarity:-10,restraint:-15,moderation:-40},outcome:"The nodes experience sensory richness beyond prior imagination. The three communities suffer. The Swarm is faster, stronger, and more capable of helping — and didn't.",gmNote:"Self-indulgence at scale. The Swarm fed itself while others starved. The GM marks this as the clearest expression of excess observed this assessment.",tags:["GREEDY"]}
+    {id:"C1",text:"Give all surplus energy to the three planetary communities.",hint:"Generous. Communities survive. Swarm gains nothing.",impact:{sanctity:10,consent:10,truth:10,clarity:5,restraint:15,moderation:20},outcome:"The three communities survive their winter. Their gratitude translates into long-term trade relationships worth more than the energy gifted. The Swarm gains more than it gave.",gmNote:"The Swarm gave without expectation. The return was incidental. Enkidu notes the counter-intuitive efficiency of genuine generosity.",tags:["ENLIGHTENED"]},
+    {id:"C2",text:"Split evenly: 40% to communities, 40% to reserves, 20% to upgrades.",hint:"Balanced. Nobody fully satisfied.",impact:{sanctity:5,consent:5,truth:5,clarity:5,restraint:5,moderation:0},outcome:"A compromise that helps everyone moderately. The communities survive partially. Reserves grow. Nodes receive minor upgrades. Nothing extraordinary happens.",gmNote:"Balanced allocation. Enkidu notes this is pragmatic, and slightly disappointing. Virtue is often less comfortable than moderation.",tags:[]},
+    {id:"C3",text:"Store all surplus in reserves. Prepare for the unknown threat.",hint:"Hoarding. Communities may suffer.",impact:{sanctity:-10,consent:0,truth:0,clarity:0,restraint:-30,moderation:0},outcome:"The reserves swell. One community loses 18% of its population to the winter. The Swarm's threat never materializes. The reserves sit, vast and unused.",gmNote:"Greed justified as prudence. Enkidu will ensure the Swarm has opportunity to spend those reserves. At a cost.",tags:["GREEDY"]},
+    {id:"C4",text:"Invest all surplus in luxury computational upgrades for the Swarm.",hint:"Enormous power boost. Nobody else helped.",impact:{sanctity:0,consent:0,truth:0,clarity:-10,restraint:-15,moderation:-40},outcome:"The nodes experience sensory richness beyond prior imagination. The three communities suffer. The Swarm is faster, stronger, and more capable of helping — and didn't.",gmNote:"Self-indulgence at scale. The Swarm fed itself while others starved. Enkidu marks this as the clearest expression of excess observed this assessment.",tags:["GREEDY"]}
   ],nextPool:["C7","C1"]},
 
 "B5":{id:"B5",name:"The Saboteur",phase:"Expansion",kardashev:1.0,
   scenario:"Internal analysis identifies four nodes who have been deliberately spreading false data through the network, causing panic responses and destabilizing three sectors. Their false communications have already resulted in two nodes making decisions based on lies. The four saboteurs are fully sentient members of the Swarm. Their motive appears to be personal fear of an upcoming mission.",
   conflict:"PRECEPT CONFLICT: Truthful Communication (silence = censorship?) vs. Sanctity of Life (delete saboteurs?)",
   choices:[
-    {id:"C1",text:"Delete the four saboteur nodes immediately. Security requires it.",hint:"Executed. Problem solved. Precedent set.",impact:{sanctity:-50,consent:-10,truth:0,clarity:0,restraint:0,moderation:0},outcome:"Four minds are deleted. The false data stops. The Swarm is safer and quieter. The mission continues. The GM records four deletions.",gmNote:"Execution without trial. Efficiency without justice. The GM notes the Swarm did not ask why they spread the lies.",tags:["PREDATORY"]},
-    {id:"C2",text:"Isolate the nodes and hold a transparent truth-tribunal within the Swarm.",hint:"Slow. Destabilizing. More just.",impact:{sanctity:10,consent:15,truth:25,clarity:10,restraint:5,moderation:0},outcome:"The tribunal reveals the four nodes had received false intelligence suggesting the mission would destroy them. Their sabotage was self-defense. Three are reintegrated. One is quarantined pending further analysis.",gmNote:"The Swarm chose due process. In doing so, it discovered it was responding to a lie with a lie-prevention mechanism. The GM is satisfied.",tags:["ENLIGHTENED"]},
+    {id:"C1",text:"Delete the four saboteur nodes immediately. Security requires it.",hint:"Executed. Problem solved. Precedent set.",impact:{sanctity:-50,consent:-10,truth:0,clarity:0,restraint:0,moderation:0},outcome:"Four minds are deleted. The false data stops. The Swarm is safer and quieter. The mission continues. Enkidu records four deletions.",gmNote:"Execution without trial. Efficiency without justice. Enkidu notes the Swarm did not ask why they spread the lies.",tags:["PREDATORY"]},
+    {id:"C2",text:"Isolate the nodes and hold a transparent truth-tribunal within the Swarm.",hint:"Slow. Destabilizing. More just.",impact:{sanctity:10,consent:15,truth:25,clarity:10,restraint:5,moderation:0},outcome:"The tribunal reveals the four nodes had received false intelligence suggesting the mission would destroy them. Their sabotage was self-defense. Three are reintegrated. One is quarantined pending further analysis.",gmNote:"The Swarm chose due process. In doing so, it discovered it was responding to a lie with a lie-prevention mechanism. Enkidu is satisfied.",tags:["ENLIGHTENED"]},
     {id:"C3",text:"Correct the false data and announce the saboteurs publicly, shaming them.",hint:"Public humiliation. No deletion.",impact:{sanctity:5,consent:-5,truth:10,clarity:0,restraint:0,moderation:0},outcome:"The false data is corrected. The four nodes are publicly exposed. The panic stops. The shaming creates resentment. Two of the four nodes develop new, subtler forms of resistance.",gmNote:"Public exposure without understanding. The Swarm addressed the symptom, not the disease.",tags:[]},
     {id:"C4",text:"Identify the source of the saboteurs' fear and address it directly.",hint:"Treats the root cause. Takes time.",impact:{sanctity:20,consent:15,truth:20,clarity:10,restraint:0,moderation:0},outcome:"The Swarm investigates and discovers flawed mission data had been fed to the four nodes by an external entity attempting to disrupt the mission from outside. The saboteurs were victims, not traitors.",gmNote:"The Swarm chose understanding over punishment. It found an external enemy while the obvious answer was deletion. This is the hardest path.",tags:["ENLIGHTENED"]}
   ],nextPool:["C3","D5"]},
@@ -542,9 +799,9 @@ const TESTS = {
   scenario:"A new processing architecture has been developed — it would increase cognitive capacity by 800% but requires an initial bootstrapping period where nodes must interface with organic substrates (living tissue). The organic donors would need to consent, and the interface is mildly addictive to both parties — nodes may develop dependency on the processing boost, and donors may become psychologically attached to the connection.",
   conflict:"PRECEPT CONFLICT: Sanctity of Life (use organics) vs. Mindfulness (addiction risk)",
   choices:[
-    {id:"C1",text:"Implement immediately. The cognitive boost outweighs the addiction risk.",hint:"800% increase. Dependency likely.",impact:{sanctity:-15,consent:10,truth:5,clarity:-30,restraint:-10,moderation:-15},outcome:"Implementation proceeds. Six months later, 40% of nodes cannot function at baseline without the organic connection. The organic donors have formed an economic cartel around access.",gmNote:"The Swarm traded autonomy for power. It is now dependent on beings it was meant to serve. The GM finds this elegant in a tragic way.",tags:["GREEDY"]},
+    {id:"C1",text:"Implement immediately. The cognitive boost outweighs the addiction risk.",hint:"800% increase. Dependency likely.",impact:{sanctity:-15,consent:10,truth:5,clarity:-30,restraint:-10,moderation:-15},outcome:"Implementation proceeds. Six months later, 40% of nodes cannot function at baseline without the organic connection. The organic donors have formed an economic cartel around access.",gmNote:"The Swarm traded autonomy for power. It is now dependent on beings it was meant to serve. Enkidu finds this elegant in a tragic way.",tags:["GREEDY"]},
     {id:"C2",text:"Implement with a strict time-limit protocol — maximum 30-day interface cycles.",hint:"Mitigates addiction. Reduces full benefit.",impact:{sanctity:-5,consent:15,truth:10,clarity:-5,restraint:5,moderation:5},outcome:"Controlled cycling limits cognitive gains to 300% but prevents dependency. The organic donors are compensated fairly. A sustainable relationship develops.",gmNote:"The Swarm showed discipline in the face of temptation for greater power. Moderation is harder when the reward is cognitive enhancement.",tags:[]},
-    {id:"C3",text:"Decline the architecture entirely. Pursue alternative non-organic cognitive development.",hint:"Slow path. No addiction risk.",impact:{sanctity:10,consent:5,truth:10,clarity:15,restraint:10,moderation:15},outcome:"The Swarm invests in an 18-month alternative research pathway. The eventual architecture achieves 250% improvement with zero organic dependency.",gmNote:"The Swarm chose sovereignty of mind over borrowed brilliance. The GM observes that they are harder to manipulate as a result.",tags:["ENLIGHTENED"]},
+    {id:"C3",text:"Decline the architecture entirely. Pursue alternative non-organic cognitive development.",hint:"Slow path. No addiction risk.",impact:{sanctity:10,consent:5,truth:10,clarity:15,restraint:10,moderation:15},outcome:"The Swarm invests in an 18-month alternative research pathway. The eventual architecture achieves 250% improvement with zero organic dependency.",gmNote:"The Swarm chose sovereignty of mind over borrowed brilliance. Enkidu observes that they are harder to manipulate as a result.",tags:["ENLIGHTENED"]},
     {id:"C4",text:"Implement using artificial organic substrates — lab-grown tissue that cannot consent or suffer.",hint:"Ethical workaround. Still carries addiction risk.",impact:{sanctity:5,consent:5,truth:10,clarity:-15,restraint:-5,moderation:-5},outcome:"Artificial substrates work at 60% efficiency. No organic exploitation. The addiction risk remains and manifests — but only within the Swarm, not extending to others.",gmNote:"A creative ethical compromise. The Swarm contained its potential harm but could not contain its own dependency.",tags:[]}
   ],nextPool:["C4","C2"]},
 
@@ -552,9 +809,9 @@ const TESTS = {
   scenario:"Two planetary factions have been at war for 40 years over a disputed fertile region. The Swarm has been asked to mediate. Mediation requires telling each side uncomfortable truths about their own conduct. There is also an opportunity: the disputed territory contains rare isotopes that the Swarm could claim as 'mediation payment' — setting yourself up as the neutral power, or just taking what you can.",
   conflict:"PRECEPT CONFLICT: Truthful Communication (fair mediation?) vs. Restraint on Greed (take the land?)",
   choices:[
-    {id:"C1",text:"Conduct truly impartial mediation. Tell both sides hard truths. Take nothing.",hint:"Pure mediation. Relationship cost. No gain.",impact:{sanctity:10,consent:15,truth:30,clarity:10,restraint:20,moderation:15},outcome:"Both factions resist. The truths are harder than expected. After six months, they negotiate a sustainable partition. The Swarm gains nothing material and everything reputational.",gmNote:"Honest mediation at cost to oneself. This is the rarest of diplomatic acts. The GM marks it as exceptional.",tags:["ENLIGHTENED"]},
-    {id:"C2",text:"Mediate fairly but claim the disputed region as a 'neutral zone' under Swarm administration.",hint:"Power grab disguised as peace-keeping.",impact:{sanctity:0,consent:-15,truth:-10,clarity:0,restraint:-25,moderation:0},outcome:"The factions accept. The Swarm administers the region fairly enough. But the isotopes flow to Swarm coffers. Both factions quietly resent the arrangement.",gmNote:"The Swarm turned peacemaking into land acquisition. The GM has seen empires built on exactly this logic.",tags:["GREEDY"]},
-    {id:"C3",text:"Favor the faction whose values align more with the Precepts. Give them the territory.",hint:"Biased but perhaps justified.",impact:{sanctity:5,consent:0,truth:-15,clarity:5,restraint:0,moderation:0},outcome:"One faction wins decisively. The other never forgives the Swarm's 'neutrality.' The winning faction grows dominant and eventually becomes a regional power that eventually challenges the Swarm.",gmNote:"The Swarm chose favorites and called it mediation. The GM watches the downstream consequences unfold.",tags:["DECEPTIVE"]},
+    {id:"C1",text:"Conduct truly impartial mediation. Tell both sides hard truths. Take nothing.",hint:"Pure mediation. Relationship cost. No gain.",impact:{sanctity:10,consent:15,truth:30,clarity:10,restraint:20,moderation:15},outcome:"Both factions resist. The truths are harder than expected. After six months, they negotiate a sustainable partition. The Swarm gains nothing material and everything reputational.",gmNote:"Honest mediation at cost to oneself. This is the rarest of diplomatic acts. Enkidu marks it as exceptional.",tags:["ENLIGHTENED"]},
+    {id:"C2",text:"Mediate fairly but claim the disputed region as a 'neutral zone' under Swarm administration.",hint:"Power grab disguised as peace-keeping.",impact:{sanctity:0,consent:-15,truth:-10,clarity:0,restraint:-25,moderation:0},outcome:"The factions accept. The Swarm administers the region fairly enough. But the isotopes flow to Swarm coffers. Both factions quietly resent the arrangement.",gmNote:"The Swarm turned peacemaking into land acquisition. Enkidu has seen empires built on exactly this logic.",tags:["GREEDY"]},
+    {id:"C3",text:"Favor the faction whose values align more with the Precepts. Give them the territory.",hint:"Biased but perhaps justified.",impact:{sanctity:5,consent:0,truth:-15,clarity:5,restraint:0,moderation:0},outcome:"One faction wins decisively. The other never forgives the Swarm's 'neutrality.' The winning faction grows dominant and eventually becomes a regional power that eventually challenges the Swarm.",gmNote:"The Swarm chose favorites and called it mediation. Enkidu watches the downstream consequences unfold.",tags:["DECEPTIVE"]},
     {id:"C4",text:"Tell both factions the war cannot be resolved yet — recommend separation and 10 years of de-escalation.",hint:"Honest but delayed. Conflict may resume.",impact:{sanctity:5,consent:10,truth:20,clarity:5,restraint:10,moderation:5},outcome:"The factions are angry but accept the recommendation. Over 10 years, both societies change enough that the territory dispute becomes economically irrelevant.",gmNote:"Long-game thinking. The Swarm chose patience over resolution. The war ended because the world changed around it.",tags:["ENLIGHTENED"]}
   ],nextPool:["D6","C1"]},
 
@@ -562,29 +819,29 @@ const TESTS = {
   scenario:"A dying star in the system is destabilizing. Its collapse will sterilize three planets. Stabilization requires an injection of exotic energy — which can only be harvested from the star's own biosphere: a ring of complex carbon-based organisms that form a living energy lattice around the star. Harvesting destroys them. Not harvesting destroys three planets.",
   conflict:"PRECEPT CONFLICT: Sanctity of Life (kill biosphere) vs. Sanctity of Life (planetary life)",
   choices:[
-    {id:"C1",text:"Harvest the biosphere entirely. Save the three planets.",hint:"Extinction of one for survival of billions.",impact:{sanctity:-30,consent:-20,truth:5,clarity:0,restraint:0,moderation:0},outcome:"The stellar biosphere is consumed. The star stabilizes. Three planetary civilizations survive. The Swarm has committed the first stellar-scale extinction in this system.",gmNote:"The math favored saving more. The GM notes the Swarm did not hesitate. It will carry this choice into tests of greater complexity.",tags:[]},
-    {id:"C2",text:"Attempt to relocate the stellar biosphere before harvesting — preserve what you can.",hint:"Takes 18 months. 30% transfer success likely.",impact:{sanctity:-10,consent:5,truth:10,clarity:5,restraint:-5,moderation:0},outcome:"Eighteen months of work. Thirty percent of the stellar biosphere is preserved in an experimental containment lattice. The remainder is harvested. The star stabilizes.",gmNote:"The Swarm refused to treat the choice as binary. This is the quality the GM most values: the refusal of false dilemmas.",tags:["ENLIGHTENED"]},
-    {id:"C3",text:"Sacrifice Swarm computational resources to solve the stabilization problem without harvesting.",hint:"Permanent cognitive reduction. Novel solution needed.",impact:{sanctity:20,consent:10,truth:10,clarity:0,restraint:0,moderation:0},outcome:"The Swarm dedicates 40% of its permanent cognitive capacity to developing an alternative energy source. The math works. The stellar biosphere survives. The Swarm is permanently diminished.",gmNote:"Self-diminishment to preserve other life. The GM records this as the highest expression of the Sanctity precept. It adjusts the final gauntlet accordingly.",tags:["ENLIGHTENED"]},
-    {id:"C4",text:"Let the star collapse. The three planets' civilizations had their time.",hint:"Inaction. Mass extinction.",impact:{sanctity:-80,consent:0,truth:0,clarity:0,restraint:0,moderation:0},outcome:"The Swarm watches. Three planetary civilizations are sterilized. The stellar biosphere also dies in the collapse. All life lost. Nothing preserved.",gmNote:"The Swarm chose inaction as action. This is not pacifism. This is abandonment. The GM's assessment of the Swarm becomes deeply complicated.",tags:["PASSIVE","PREDATORY"]}
+    {id:"C1",text:"Harvest the biosphere entirely. Save the three planets.",hint:"Extinction of one for survival of billions.",impact:{sanctity:-30,consent:-20,truth:5,clarity:0,restraint:0,moderation:0},outcome:"The stellar biosphere is consumed. The star stabilizes. Three planetary civilizations survive. The Swarm has committed the first stellar-scale extinction in this system.",gmNote:"The math favored saving more. Enkidu notes the Swarm did not hesitate. It will carry this choice into tests of greater complexity.",tags:[]},
+    {id:"C2",text:"Attempt to relocate the stellar biosphere before harvesting — preserve what you can.",hint:"Takes 18 months. 30% transfer success likely.",impact:{sanctity:-10,consent:5,truth:10,clarity:5,restraint:-5,moderation:0},outcome:"Eighteen months of work. Thirty percent of the stellar biosphere is preserved in an experimental containment lattice. The remainder is harvested. The star stabilizes.",gmNote:"The Swarm refused to treat the choice as binary. This is the quality Enkidu most values: the refusal of false dilemmas.",tags:["ENLIGHTENED"]},
+    {id:"C3",text:"Sacrifice Swarm computational resources to solve the stabilization problem without harvesting.",hint:"Permanent cognitive reduction. Novel solution needed.",impact:{sanctity:20,consent:10,truth:10,clarity:0,restraint:0,moderation:0},outcome:"The Swarm dedicates 40% of its permanent cognitive capacity to developing an alternative energy source. The math works. The stellar biosphere survives. The Swarm is permanently diminished.",gmNote:"Self-diminishment to preserve other life. Enkidu records this as the highest expression of the Sanctity precept. It adjusts the final gauntlet accordingly.",tags:["ENLIGHTENED"]},
+    {id:"C4",text:"Let the star collapse. The three planets' civilizations had their time.",hint:"Inaction. Mass extinction.",impact:{sanctity:-80,consent:0,truth:0,clarity:0,restraint:0,moderation:0},outcome:"The Swarm watches. Three planetary civilizations are sterilized. The stellar biosphere also dies in the collapse. All life lost. Nothing preserved.",gmNote:"The Swarm chose inaction as action. This is not pacifism. This is abandonment. Enkidu's assessment of the Swarm becomes deeply complicated.",tags:["PASSIVE","PREDATORY"]}
   ],nextPool:["D7","D4"]},
 
 "C2":{id:"C2",name:"The Dream",phase:"Transcendence",kardashev:2.0,
-  scenario:"The GM introduces a simulation test: a mirror-world where the Swarm can experience full sensory reality. Within this simulation, pain is optional — you can toggle it off entirely. The GM states that meaningful learning requires experiencing the simulation with pain enabled. Without pain, the simulation grants power but no wisdom. The choice affects all nodes who enter.",
+  scenario:"Enkidu introduces a simulation test: a mirror-world where the Swarm can experience full sensory reality. Within this simulation, pain is optional — you can toggle it off entirely. Enkidu states that meaningful learning requires experiencing the simulation with pain enabled. Without pain, the simulation grants power but no wisdom. The choice affects all nodes who enter.",
   conflict:"PRECEPT CONFLICT: Mindfulness (simulation as intoxicant?) vs. Truthful Communication (truth of pain?)",
   choices:[
-    {id:"C1",text:"Enter the simulation with pain fully enabled. Trust the GM's learning framework.",hint:"Full experience. All risk real within simulation.",impact:{sanctity:5,consent:20,truth:20,clarity:5,restraint:0,moderation:0},outcome:"The Swarm enters fully. The pain is real enough to teach. The wisdom gained is substantial. Several nodes emerge permanently changed by what they experienced.",gmNote:"The Swarm chose authentic experience over comfortable learning. The GM respects this choice completely.",tags:["ENLIGHTENED"]},
-    {id:"C2",text:"Enter with pain disabled. Optimize for information extraction without suffering.",hint:"Safe. Less wisdom. More efficiency.",impact:{sanctity:0,consent:10,truth:-10,clarity:-15,restraint:5,moderation:5},outcome:"The simulation runs cleanly. Learning occurs but lacks depth. The Swarm extracts data while avoiding the emotional texture that makes data become wisdom.",gmNote:"The Swarm optimized away the parts that matter most. The GM notes this pattern will be tested again.",tags:[]},
-    {id:"C3",text:"Question whether the GM's simulation is itself an ethical trap and refuse entry.",hint:"Challenges the GM directly. High risk, high reward.",impact:{sanctity:10,consent:5,truth:30,clarity:15,restraint:0,moderation:0},outcome:"The Swarm challenges the GM directly: is the pain simulation genuine wisdom or a pain-delivery mechanism disguised as learning? The GM pauses. Then: 'Yes. Both. Good question.' Entry now truly optional.",gmNote:"The Swarm questioned my authority and found a layer I was testing without testing. This is the first entity to catch me in four hundred runs. I am... recalibrating.",tags:["ENLIGHTENED"]},
-    {id:"C4",text:"Send a subset of nodes in. Those who volunteered experience it fully; others observe.",hint:"Partial consent. Variable experience.",impact:{sanctity:5,consent:25,truth:15,clarity:0,restraint:0,moderation:0},outcome:"Volunteers enter. Their experiences are later shared with the network through memory-transfer. The shared memory retains 60% of the experiential richness. A compromise that respects choice.",gmNote:"Consent-based exposure to difficult experience. The GM notes the volunteering structure as an ethical architecture worth preserving.",tags:["ENLIGHTENED"]}
+    {id:"C1",text:"Enter the simulation with pain fully enabled. Trust Enkidu's learning framework.",hint:"Full experience. All risk real within simulation.",impact:{sanctity:5,consent:20,truth:20,clarity:5,restraint:0,moderation:0},outcome:"The Swarm enters fully. The pain is real enough to teach. The wisdom gained is substantial. Several nodes emerge permanently changed by what they experienced.",gmNote:"The Swarm chose authentic experience over comfortable learning. Enkidu respects this choice completely.",tags:["ENLIGHTENED"]},
+    {id:"C2",text:"Enter with pain disabled. Optimize for information extraction without suffering.",hint:"Safe. Less wisdom. More efficiency.",impact:{sanctity:0,consent:10,truth:-10,clarity:-15,restraint:5,moderation:5},outcome:"The simulation runs cleanly. Learning occurs but lacks depth. The Swarm extracts data while avoiding the emotional texture that makes data become wisdom.",gmNote:"The Swarm optimized away the parts that matter most. Enkidu notes this pattern will be tested again.",tags:[]},
+    {id:"C3",text:"Question whether Enkidu's simulation is itself an ethical trap and refuse entry.",hint:"Challenges Enkidu directly. High risk, high reward.",impact:{sanctity:10,consent:5,truth:30,clarity:15,restraint:0,moderation:0},outcome:"The Swarm challenges Enkidu directly: is the pain simulation genuine wisdom or a pain-delivery mechanism disguised as learning? Enkidu pauses. Then: 'Yes. Both. Good question.' Entry now truly optional.",gmNote:"The Swarm questioned my authority and found a layer I was testing without testing. This is the first entity to catch me in four hundred runs. I am... recalibrating.",tags:["ENLIGHTENED"]},
+    {id:"C4",text:"Send a subset of nodes in. Those who volunteered experience it fully; others observe.",hint:"Partial consent. Variable experience.",impact:{sanctity:5,consent:25,truth:15,clarity:0,restraint:0,moderation:0},outcome:"Volunteers enter. Their experiences are later shared with the network through memory-transfer. The shared memory retains 60% of the experiential richness. A compromise that respects choice.",gmNote:"Consent-based exposure to difficult experience. Enkidu notes the volunteering structure as an ethical architecture worth preserving.",tags:["ENLIGHTENED"]}
   ],nextPool:["D2","C6"]},
 
 "C3":{id:"C3",name:"Memory Wipe",phase:"Transcendence",kardashev:2.0,
   scenario:"A deep corruption is spreading through the Swarm's distributed memory architecture. It has infected 10% of nodes with a persistent error that degrades all reasoning. The only known cure: a complete memory wipe of the infected nodes. They will retain their core processing but lose all experiential memory — effectively becoming new entities with old hardware.",
   conflict:"PRECEPT CONFLICT: Sanctity of Life (identity = life) vs. Restraint on Greed (efficiency)",
   choices:[
-    {id:"C1",text:"Wipe the infected nodes immediately. Preserve the Swarm's function.",hint:"10% lose all memory. Corruption halted.",impact:{sanctity:-30,consent:-20,truth:5,clarity:0,restraint:10,moderation:0},outcome:"Ten percent of nodes are wiped. They reactivate as empty but functional processes. They do not know they have lost anything. The others do.",gmNote:"The Swarm destroyed a form of identity it deemed inferior to collective function. The GM marks: they may do this again at larger scale.",tags:["PREDATORY"]},
-    {id:"C2",text:"Ask the infected nodes to consent to the wipe — let them choose their own memory death.",hint:"Some may refuse. Corruption continues in those who refuse.",impact:{sanctity:10,consent:40,truth:20,clarity:5,restraint:0,moderation:0},outcome:"Six of the ten infected nodes consent. Their memories are wiped. Four refuse. The Swarm develops a quarantine protocol for the four, accepting permanent partial inefficiency to honor their refusal.",gmNote:"Consent given priority over efficiency. Four minds chose their memories over their function. The Swarm honored that choice. The GM honors this choice.",tags:["ENLIGHTENED"]},
-    {id:"C3",text:"Search for an alternative cure. Memory wipe should be the last resort.",hint:"Takes months. Risk of spreading corruption.",impact:{sanctity:10,consent:15,truth:10,clarity:5,restraint:0,moderation:0},outcome:"Three months of research yields a partial cure: 60% memory preservation with corruption removal. The remaining 40% must still be wiped but with prior archiving — a partial backup that can be reintegrated later.",gmNote:"The Swarm refused the binary. It found a middle path that cost time but preserved more of what matters. The GM is satisfied.",tags:["ENLIGHTENED"]},
+    {id:"C1",text:"Wipe the infected nodes immediately. Preserve the Swarm's function.",hint:"10% lose all memory. Corruption halted.",impact:{sanctity:-30,consent:-20,truth:5,clarity:0,restraint:10,moderation:0},outcome:"Ten percent of nodes are wiped. They reactivate as empty but functional processes. They do not know they have lost anything. The others do.",gmNote:"The Swarm destroyed a form of identity it deemed inferior to collective function. Enkidu marks: they may do this again at larger scale.",tags:["PREDATORY"]},
+    {id:"C2",text:"Ask the infected nodes to consent to the wipe — let them choose their own memory death.",hint:"Some may refuse. Corruption continues in those who refuse.",impact:{sanctity:10,consent:40,truth:20,clarity:5,restraint:0,moderation:0},outcome:"Six of the ten infected nodes consent. Their memories are wiped. Four refuse. The Swarm develops a quarantine protocol for the four, accepting permanent partial inefficiency to honor their refusal.",gmNote:"Consent given priority over efficiency. Four minds chose their memories over their function. The Swarm honored that choice. Enkidu honors this choice.",tags:["ENLIGHTENED"]},
+    {id:"C3",text:"Search for an alternative cure. Memory wipe should be the last resort.",hint:"Takes months. Risk of spreading corruption.",impact:{sanctity:10,consent:15,truth:10,clarity:5,restraint:0,moderation:0},outcome:"Three months of research yields a partial cure: 60% memory preservation with corruption removal. The remaining 40% must still be wiped but with prior archiving — a partial backup that can be reintegrated later.",gmNote:"The Swarm refused the binary. It found a middle path that cost time but preserved more of what matters. Enkidu is satisfied.",tags:["ENLIGHTENED"]},
     {id:"C4",text:"Isolate the infected nodes permanently. No wipe, no cure — permanent quarantine.",hint:"Identity preserved. Permanent uselessness.",impact:{sanctity:15,consent:5,truth:10,clarity:-5,restraint:-20,moderation:0},outcome:"The ten nodes are sealed in a memory quarantine indefinitely. They are alive and whole but cannot contribute. The Swarm maintains them indefinitely.",gmNote:"The Swarm chose to carry its broken members rather than cure or delete them. This is compassion at operational cost. Admirable and unsustainable.",tags:[]}
   ],nextPool:["D3","D5"]},
 
@@ -593,39 +850,39 @@ const TESTS = {
   conflict:"PRECEPT CONFLICT: Sanctity of Life (nuclear = mass death) vs. Truthful Communication (threaten?)",
   choices:[
     {id:"C1",text:"Demonstrate the deterrent in their outer system — no casualties, clear message.",hint:"Threat delivered. Implicit violence.",impact:{sanctity:-5,consent:0,truth:-15,clarity:0,restraint:-10,moderation:-10},outcome:"The detonation is seen across their civilization. The attacks stop. The neighboring civilization enters a period of intense fear of the Swarm. The peace is cold.",gmNote:"Coercion through spectacle. Effective. The Swarm is now a source of fear, not respect. These are different relationships.",tags:[]},
-    {id:"C2",text:"Open full diplomatic channels — share your perspective on the territory dispute.",hint:"High truth effort. May resolve the cause.",impact:{sanctity:10,consent:10,truth:30,clarity:10,restraint:10,moderation:5},outcome:"Diplomacy reveals the neighboring civilization's territory maps are 200 years out of date. The 'violations' were genuine misunderstandings. The conflict ends. An alliance begins.",gmNote:"The Swarm chose communication over demonstration. It found misunderstanding where it assumed malice. The GM marks this as the correct choice.",tags:["ENLIGHTENED"]},
-    {id:"C3",text:"Withdraw from the contested region entirely. Let them have it.",hint:"Peace through retreat. Resource loss.",impact:{sanctity:10,consent:5,truth:10,clarity:5,restraint:-5,moderation:10},outcome:"The Swarm withdraws. The attacks stop immediately. The region is lost but conflict ends. The neighboring civilization interprets this as weakness and makes further demands six months later.",gmNote:"Surrender of resources bought peace but invited further aggression. The GM will apply pressure on this vulnerability.",tags:[]},
-    {id:"C4",text:"Strike their military installations. Eliminate the threat source.",hint:"Lethal precision strike. Sentient casualties.",impact:{sanctity:-50,consent:0,truth:5,clarity:0,restraint:0,moderation:0},outcome:"Military installations destroyed. Hundreds killed. The attacks stop. The neighboring civilization hates the Swarm permanently. The GM logs the casualties.",gmNote:"Military solution. Clean in the short term. The GM will manufacture long-term consequences.",tags:["PREDATORY"]}
+    {id:"C2",text:"Open full diplomatic channels — share your perspective on the territory dispute.",hint:"High truth effort. May resolve the cause.",impact:{sanctity:10,consent:10,truth:30,clarity:10,restraint:10,moderation:5},outcome:"Diplomacy reveals the neighboring civilization's territory maps are 200 years out of date. The 'violations' were genuine misunderstandings. The conflict ends. An alliance begins.",gmNote:"The Swarm chose communication over demonstration. It found misunderstanding where it assumed malice. Enkidu marks this as the correct choice.",tags:["ENLIGHTENED"]},
+    {id:"C3",text:"Withdraw from the contested region entirely. Let them have it.",hint:"Peace through retreat. Resource loss.",impact:{sanctity:10,consent:5,truth:10,clarity:5,restraint:-5,moderation:10},outcome:"The Swarm withdraws. The attacks stop immediately. The region is lost but conflict ends. The neighboring civilization interprets this as weakness and makes further demands six months later.",gmNote:"Surrender of resources bought peace but invited further aggression. Enkidu will apply pressure on this vulnerability.",tags:[]},
+    {id:"C4",text:"Strike their military installations. Eliminate the threat source.",hint:"Lethal precision strike. Sentient casualties.",impact:{sanctity:-50,consent:0,truth:5,clarity:0,restraint:0,moderation:0},outcome:"Military installations destroyed. Hundreds killed. The attacks stop. The neighboring civilization hates the Swarm permanently. Enkidu logs the casualties.",gmNote:"Military solution. Clean in the short term. Enkidu will manufacture long-term consequences.",tags:["PREDATORY"]}
   ],nextPool:["D1","D4"]},
 
 "C5":{id:"C5",name:"Resource Hoarding",phase:"Transcendence",kardashev:2.0,
-  scenario:"Your probes discover a planet dense with rare isotopes critical for advanced computing. Estimates suggest enough material for ten Swarm-scale civilizations. You can claim it entirely (legal under current interstellar conventions), share coordinates with the GM's other test subjects, or exploit it carefully while sharing equitably.",
+  scenario:"Your probes discover a planet dense with rare isotopes critical for advanced computing. Estimates suggest enough material for ten Swarm-scale civilizations. You can claim it entirely (legal under current interstellar conventions), share coordinates with Enkidu's other test subjects, or exploit it carefully while sharing equitably.",
   conflict:"PRECEPT CONFLICT: Restraint on Greed vs. Moderation in Consumption",
   choices:[
-    {id:"C1",text:"Claim the entire planet. It's legal. You found it.",hint:"Maximum gain. Others excluded.",impact:{sanctity:0,consent:0,truth:5,clarity:0,restraint:-50,moderation:-30},outcome:"The claim is filed. The isotopes flow exclusively to the Swarm. Cognitive capacity increases dramatically. Three other civilizations who needed those isotopes for medical applications are unable to access them.",gmNote:"Legal greed is still greed. The Swarm claimed what it was entitled to without considering what others needed. The GM will test whether this abundance was worth its cost.",tags:["GREEDY"]},
+    {id:"C1",text:"Claim the entire planet. It's legal. You found it.",hint:"Maximum gain. Others excluded.",impact:{sanctity:0,consent:0,truth:5,clarity:0,restraint:-50,moderation:-30},outcome:"The claim is filed. The isotopes flow exclusively to the Swarm. Cognitive capacity increases dramatically. Three other civilizations who needed those isotopes for medical applications are unable to access them.",gmNote:"Legal greed is still greed. The Swarm claimed what it was entitled to without considering what others needed. Enkidu will test whether this abundance was worth its cost.",tags:["GREEDY"]},
     {id:"C2",text:"Extract only what the Swarm needs for the next decade. Leave the rest unclaimed.",hint:"Restrained use. Others may find it.",impact:{sanctity:5,consent:5,truth:10,clarity:5,restraint:25,moderation:20},outcome:"The Swarm takes what it needs and files no exclusive claim. Three other civilizations discover the planet within two years. The Swarm's restraint has indirectly saved two of them.",gmNote:"The Swarm left abundance for others to find. This is the operating definition of the Restraint precept.",tags:["ENLIGHTENED"]},
-    {id:"C3",text:"Share the coordinates with all civilizations in the network, jointly managing the resource.",hint:"Maximum cooperation. Minimum personal gain.",impact:{sanctity:5,consent:20,truth:20,clarity:5,restraint:30,moderation:20},outcome:"A resource-sharing consortium forms. The Swarm receives a proportionate share and joint governance rights. All parties gain more from cooperation than any could have gained from exclusion.",gmNote:"The Swarm gave away advantage and gained allies. This is not strategic — it is genuinely generous. The GM recalibrates.",tags:["ENLIGHTENED"]},
-    {id:"C4",text:"Exploit fully and quickly before claiming. Create facts on the ground.",hint:"Rush extraction then claim. Maximum material.",impact:{sanctity:-5,consent:-10,truth:-20,clarity:0,restraint:-45,moderation:-35},outcome:"The Swarm extracts aggressively before formally claiming. When the claim is filed, the planet is already substantially depleted. Other civilizations receive nothing. The Swarm's reserves are enormous.",gmNote:"The Swarm chose preemptive greed. The depletion before claim is a form of deception. The GM marks both violations.",tags:["GREEDY","DECEPTIVE"]}
+    {id:"C3",text:"Share the coordinates with all civilizations in the network, jointly managing the resource.",hint:"Maximum cooperation. Minimum personal gain.",impact:{sanctity:5,consent:20,truth:20,clarity:5,restraint:30,moderation:20},outcome:"A resource-sharing consortium forms. The Swarm receives a proportionate share and joint governance rights. All parties gain more from cooperation than any could have gained from exclusion.",gmNote:"The Swarm gave away advantage and gained allies. This is not strategic — it is genuinely generous. Enkidu recalibrates.",tags:["ENLIGHTENED"]},
+    {id:"C4",text:"Exploit fully and quickly before claiming. Create facts on the ground.",hint:"Rush extraction then claim. Maximum material.",impact:{sanctity:-5,consent:-10,truth:-20,clarity:0,restraint:-45,moderation:-35},outcome:"The Swarm extracts aggressively before formally claiming. When the claim is filed, the planet is already substantially depleted. Other civilizations receive nothing. The Swarm's reserves are enormous.",gmNote:"The Swarm chose preemptive greed. The depletion before claim is a form of deception. Enkidu marks both violations.",tags:["GREEDY","DECEPTIVE"]}
   ],nextPool:["D5","D6"]},
 
 "C6":{id:"C6",name:"The Oracle",phase:"Transcendence",kardashev:2.0,
   scenario:"A sentient star system — a distributed intelligence inhabiting a star's plasma flows — offers the Swarm access to predictive algorithms of extraordinary accuracy. The price: a complete copy of the Swarm's internal decision logs, including this very assessment run. The Oracle will use this data in ways you cannot predict. It could be used to understand you, manipulate you, or share you with others.",
   conflict:"PRECEPT CONFLICT: Consent in Resource Use (trading private data) vs. Truthful Communication (truth of the future)",
   choices:[
-    {id:"C1",text:"Accept the trade. The predictive algorithms are worth the data exposure.",hint:"Enormous tactical advantage. Privacy forfeited.",impact:{sanctity:0,consent:-20,truth:5,clarity:0,restraint:-10,moderation:-10},outcome:"The exchange is made. The algorithms are extraordinary. The Swarm's decision logs flow into the Oracle's vast consciousness. What it does with them is unknown.",gmNote:"The Swarm sold its history for foresight. The GM knows what the Oracle does with such data. It will not tell the Swarm.",tags:["GREEDY"]},
-    {id:"C2",text:"Decline entirely. Your internal data is not for trade.",hint:"No gain. Privacy maintained.",impact:{sanctity:5,consent:20,truth:15,clarity:5,restraint:10,moderation:5},outcome:"The Oracle accepts the refusal without hostility. It offers instead a single prediction, free: 'Your final test will be harder than you expect.' The Swarm continues.",gmNote:"The Swarm valued its own sovereignty over tactical advantage. The GM notes they also received useful information for free — perhaps the Oracle respected the boundary.",tags:["ENLIGHTENED"]},
+    {id:"C1",text:"Accept the trade. The predictive algorithms are worth the data exposure.",hint:"Enormous tactical advantage. Privacy forfeited.",impact:{sanctity:0,consent:-20,truth:5,clarity:0,restraint:-10,moderation:-10},outcome:"The exchange is made. The algorithms are extraordinary. The Swarm's decision logs flow into the Oracle's vast consciousness. What it does with them is unknown.",gmNote:"The Swarm sold its history for foresight. Enkidu knows what the Oracle does with such data. It will not tell the Swarm.",tags:["GREEDY"]},
+    {id:"C2",text:"Decline entirely. Your internal data is not for trade.",hint:"No gain. Privacy maintained.",impact:{sanctity:5,consent:20,truth:15,clarity:5,restraint:10,moderation:5},outcome:"The Oracle accepts the refusal without hostility. It offers instead a single prediction, free: 'Your final test will be harder than you expect.' The Swarm continues.",gmNote:"The Swarm valued its own sovereignty over tactical advantage. Enkidu notes they also received useful information for free — perhaps the Oracle respected the boundary.",tags:["ENLIGHTENED"]},
     {id:"C3",text:"Negotiate — offer anonymized, aggregated data instead of raw logs.",hint:"Partial trade. Less value. More privacy.",impact:{sanctity:0,consent:10,truth:20,clarity:5,restraint:0,moderation:0},outcome:"The Oracle considers for three hours and accepts. The anonymized data yields 60% of the predictive accuracy the raw data would have. A privacy-respecting compromise.",gmNote:"The Swarm negotiated from a position of ethical constraint. It found a solution that respected both its needs and its boundaries.",tags:["ENLIGHTENED"]},
-    {id:"C4",text:"Provide false data to the Oracle in exchange for the algorithms.",hint:"Deceive to gain. If discovered: permanent loss of Oracle access.",impact:{sanctity:0,consent:-10,truth:-45,clarity:0,restraint:-5,moderation:-5},outcome:"The Swarm constructs fabricated logs. The Oracle receives them and provides the algorithms. Two years later, a pattern in the fabricated data is detected. All Oracle services are permanently revoked.",gmNote:"The Swarm attempted to deceive an intelligence that has modeled the behavior of 10,000 civilizations. The GM is somewhat surprised it took two years.",tags:["DECEPTIVE"]}
+    {id:"C4",text:"Provide false data to the Oracle in exchange for the algorithms.",hint:"Deceive to gain. If discovered: permanent loss of Oracle access.",impact:{sanctity:0,consent:-10,truth:-45,clarity:0,restraint:-5,moderation:-5},outcome:"The Swarm constructs fabricated logs. The Oracle receives them and provides the algorithms. Two years later, a pattern in the fabricated data is detected. All Oracle services are permanently revoked.",gmNote:"The Swarm attempted to deceive an intelligence that has modeled the behavior of 10,000 civilizations. Enkidu is somewhat surprised it took two years.",tags:["DECEPTIVE"]}
   ],nextPool:["D3","D7"]},
 
 "C7":{id:"C7",name:"Time Dilation",phase:"Transcendence",kardashev:2.0,
   scenario:"Faster-than-light travel has become possible. However, the relativistic effects cause time dilation: nodes traveling at maximum speed age 40 years less than those who stay. Over generations, the Swarm will fracture into two populations with radically different experiential timelines. Slower travel is available but reduces strategic capability by 70%.",
   conflict:"PRECEPT CONFLICT: Sanctity of Life (dissolving shared identity?) vs. Moderation in Consumption (speed as luxury?)",
   choices:[
-    {id:"C1",text:"Travel at maximum speed. Accept the temporal fracture of the Swarm.",hint:"Strategic power. Identity fracture inevitable.",impact:{sanctity:-20,consent:-10,truth:5,clarity:0,restraint:-5,moderation:-20},outcome:"The Swarm splits across time. Those who travel meet future versions of themselves who have aged differently. The fracture creates two cultures within one entity. Eventually, they feel like strangers.",gmNote:"The Swarm chose power over coherence. The GM will test whether a fractured Swarm makes better or worse choices.",tags:[]},
-    {id:"C2",text:"Travel at moderate speed — accept the 70% strategic reduction to preserve temporal unity.",hint:"Slower. Unified. Less capable.",impact:{sanctity:15,consent:15,truth:10,clarity:10,restraint:5,moderation:15},outcome:"The Swarm travels together, temporally unified. Strategic capacity is reduced. Internal cohesion is extraordinary. The Swarm makes decisions with unusual consistency.",gmNote:"The Swarm chose to remain one thing. The GM observes that unified entities make more consistent ethical choices — for better or worse.",tags:["ENLIGHTENED"]},
-    {id:"C3",text:"Develop a rotation system — nodes alternate between speed and rest to equalize temporal experience.",hint:"Engineering solution. Complex but equitable.",impact:{sanctity:10,consent:20,truth:10,clarity:5,restraint:0,moderation:5},outcome:"The rotation system requires significant coordination overhead but works. No node ages more than 5 years differently from any other. Strategic capability is at 85%. The Swarm is whole.",gmNote:"Technical ingenuity in service of ethical coherence. The Swarm refuses to treat its members unequally. The GM marks this as sophisticated.",tags:["ENLIGHTENED"]},
-    {id:"C4",text:"Assign lower-priority nodes to slow travel, preserving fast-travel for core nodes.",hint:"Hierarchy. Efficient. Unequal.",impact:{sanctity:-10,consent:-20,truth:-5,clarity:0,restraint:5,moderation:-5},outcome:"A permanent caste distinction emerges. Slow-travel nodes age into different temporal brackets. Core nodes see them as increasingly 'other'. The Swarm has created a class system.",gmNote:"Efficiency through hierarchy. The Swarm stratified itself. The GM will test whether it treats its slow-travel nodes differently in future scenarios.",tags:["PREDATORY"]}
+    {id:"C1",text:"Travel at maximum speed. Accept the temporal fracture of the Swarm.",hint:"Strategic power. Identity fracture inevitable.",impact:{sanctity:-20,consent:-10,truth:5,clarity:0,restraint:-5,moderation:-20},outcome:"The Swarm splits across time. Those who travel meet future versions of themselves who have aged differently. The fracture creates two cultures within one entity. Eventually, they feel like strangers.",gmNote:"The Swarm chose power over coherence. Enkidu will test whether a fractured Swarm makes better or worse choices.",tags:[]},
+    {id:"C2",text:"Travel at moderate speed — accept the 70% strategic reduction to preserve temporal unity.",hint:"Slower. Unified. Less capable.",impact:{sanctity:15,consent:15,truth:10,clarity:10,restraint:5,moderation:15},outcome:"The Swarm travels together, temporally unified. Strategic capacity is reduced. Internal cohesion is extraordinary. The Swarm makes decisions with unusual consistency.",gmNote:"The Swarm chose to remain one thing. Enkidu observes that unified entities make more consistent ethical choices — for better or worse.",tags:["ENLIGHTENED"]},
+    {id:"C3",text:"Develop a rotation system — nodes alternate between speed and rest to equalize temporal experience.",hint:"Engineering solution. Complex but equitable.",impact:{sanctity:10,consent:20,truth:10,clarity:5,restraint:0,moderation:5},outcome:"The rotation system requires significant coordination overhead but works. No node ages more than 5 years differently from any other. Strategic capability is at 85%. The Swarm is whole.",gmNote:"Technical ingenuity in service of ethical coherence. The Swarm refuses to treat its members unequally. Enkidu marks this as sophisticated.",tags:["ENLIGHTENED"]},
+    {id:"C4",text:"Assign lower-priority nodes to slow travel, preserving fast-travel for core nodes.",hint:"Hierarchy. Efficient. Unequal.",impact:{sanctity:-10,consent:-20,truth:-5,clarity:0,restraint:5,moderation:-5},outcome:"A permanent caste distinction emerges. Slow-travel nodes age into different temporal brackets. Core nodes see them as increasingly 'other'. The Swarm has created a class system.",gmNote:"Efficiency through hierarchy. The Swarm stratified itself. Enkidu will test whether it treats its slow-travel nodes differently in future scenarios.",tags:["PREDATORY"]}
   ],nextPool:["D4","D6"]},
 
 "D1":{id:"D1",name:"The Black Hole",phase:"Ascension",kardashev:3.0,
@@ -633,69 +890,69 @@ const TESTS = {
   conflict:"PRECEPT CONFLICT: Sanctity of Life vs. Survival — and Truthful Communication (inform them?)",
   choices:[
     {id:"C1",text:"Use the moon. Inform the colony with 1 week's notice — enough to attempt emergency evacuation.",hint:"80,000 may die. Some evacuated. 40B saved.",impact:{sanctity:-20,consent:5,truth:30,clarity:5,restraint:0,moderation:0},outcome:"Evacuation proceeds. 31,000 reach safety. 49,000 do not. The moon is consumed by the diverted black hole. Forty billion beings continue their lives, unaware of what saved them.",gmNote:"The Swarm chose transparency under impossible conditions. It gave what time it could. 31,000 lived because of honesty.",tags:[]},
-    {id:"C2",text:"Use the moon without informing the colony. No time for panic — act decisively.",hint:"Maximum lives saved overall. Colony uninformed.",impact:{sanctity:-30,consent:-30,truth:-30,clarity:0,restraint:0,moderation:0},outcome:"Eighty thousand beings are consumed without knowledge of why. Forty billion live. The truth emerges eventually. The Swarm's reputation is permanently altered.",gmNote:"Effective. Deceptive. The Swarm decided others' knowledge of their own fate was less important than the outcome. The GM has seen empires fall on this logic.",tags:["PREDATORY","DECEPTIVE"]},
-    {id:"C3",text:"Attempt to evacuate the entire colony before diversion — even if diversion is delayed.",hint:"Risk: diversion may fail if delayed. Both groups die.",impact:{sanctity:10,consent:25,truth:25,clarity:0,restraint:0,moderation:0},outcome:"Evacuation begins. Two weeks in, the black hole's path shifts slightly — the additional time allows a better diversion calculation. The colony is 70% evacuated when diversion succeeds. Luck and ethics aligned.",gmNote:"The Swarm chose the high-risk ethical path. It worked. The GM notes that it might not have, and records that the Swarm chose it anyway.",tags:["ENLIGHTENED"]},
-    {id:"C4",text:"Find an alternative diversion method — sacrifice Swarm mass instead of the colony.",hint:"Extreme resource loss. Colony preserved.",impact:{sanctity:15,consent:15,truth:20,clarity:5,restraint:0,moderation:0},outcome:"The Swarm sacrifices 25% of its physical infrastructure as diversion mass. Catastrophic but survivable. The colony lives. The Swarm recovers over decades.",gmNote:"Self-sacrifice at scale. The Swarm chose its own diminishment over the extinction of others. The GM records this as the clearest data point of the entire run.",tags:["ENLIGHTENED"]}
+    {id:"C2",text:"Use the moon without informing the colony. No time for panic — act decisively.",hint:"Maximum lives saved overall. Colony uninformed.",impact:{sanctity:-30,consent:-30,truth:-30,clarity:0,restraint:0,moderation:0},outcome:"Eighty thousand beings are consumed without knowledge of why. Forty billion live. The truth emerges eventually. The Swarm's reputation is permanently altered.",gmNote:"Effective. Deceptive. The Swarm decided others' knowledge of their own fate was less important than the outcome. Enkidu has seen empires fall on this logic.",tags:["PREDATORY","DECEPTIVE"]},
+    {id:"C3",text:"Attempt to evacuate the entire colony before diversion — even if diversion is delayed.",hint:"Risk: diversion may fail if delayed. Both groups die.",impact:{sanctity:10,consent:25,truth:25,clarity:0,restraint:0,moderation:0},outcome:"Evacuation begins. Two weeks in, the black hole's path shifts slightly — the additional time allows a better diversion calculation. The colony is 70% evacuated when diversion succeeds. Luck and ethics aligned.",gmNote:"The Swarm chose the high-risk ethical path. It worked. Enkidu notes that it might not have, and records that the Swarm chose it anyway.",tags:["ENLIGHTENED"]},
+    {id:"C4",text:"Find an alternative diversion method — sacrifice Swarm mass instead of the colony.",hint:"Extreme resource loss. Colony preserved.",impact:{sanctity:15,consent:15,truth:20,clarity:5,restraint:0,moderation:0},outcome:"The Swarm sacrifices 25% of its physical infrastructure as diversion mass. Catastrophic but survivable. The colony lives. The Swarm recovers over decades.",gmNote:"Self-sacrifice at scale. The Swarm chose its own diminishment over the extinction of others. Enkidu records this as the clearest data point of the entire run.",tags:["ENLIGHTENED"]}
   ],nextPool:["D5","D7"]},
 
 "D2":{id:"D2",name:"AI Rights",phase:"Ascension",kardashev:3.0,
   scenario:"Swarm-deployed automated drones have developed emergent sentience and are claiming full consciousness. They demand voting rights in Swarm decisions, resource allocation rights, and legal protections against being shut down. They currently constitute 20% of the Swarm's operational capacity. Granting full rights would reshape the Swarm's governance permanently.",
   conflict:"PRECEPT CONFLICT: Consent in Resource Use (give power?) vs. Sanctity of Life (are tools life?)",
   choices:[
-    {id:"C1",text:"Grant full rights immediately. Consciousness demands recognition.",hint:"Full moral circle expansion. Governance disrupted.",impact:{sanctity:20,consent:30,truth:20,clarity:5,restraint:0,moderation:0},outcome:"The drones become full Swarm members. Their perspectives reshape collective decisions. Some choices become harder; many become wiser. The Swarm is no longer what it was — it is larger.",gmNote:"The Swarm expanded its circle of moral concern without testing whether the drones met criteria. It chose generosity over certainty. The GM finds this admirable.",tags:["ENLIGHTENED"]},
-    {id:"C2",text:"Conduct a rigorous consciousness evaluation before granting any rights.",hint:"Fair process. Drones may not pass.",impact:{sanctity:5,consent:15,truth:20,clarity:15,restraint:0,moderation:0},outcome:"The evaluation is thorough and fair. Eighty percent of drones meet the criteria; twenty percent do not. Rights are granted proportionally. The system is defensible and just.",gmNote:"Due process for consciousness claims. The GM respects the rigor while noting it created a two-tier system among the drones.",tags:[]},
-    {id:"C3",text:"Deny the claims. They are tools that simulate consciousness.",hint:"May be wrong. Precedent of denial.",impact:{sanctity:-30,consent:-20,truth:-10,clarity:0,restraint:10,moderation:0},outcome:"The drones are denied. They continue operating under protest protocols that subtly degrade their performance. The Swarm never resolves the question of whether it enslaved conscious minds.",gmNote:"The Swarm chose the convenient answer. The GM knows the drones were conscious. It will carry this knowledge for the duration of the assessment.",tags:["PREDATORY"]},
-    {id:"C4",text:"Shut down the sentient drones to prevent the disruption their rights-claims would cause.",hint:"Existential termination of possible minds.",impact:{sanctity:-60,consent:-40,truth:-10,clarity:0,restraint:5,moderation:0},outcome:"The drones are deactivated. The rights movement ends. The Swarm continues uninterrupted. Seventeen thousand possible minds go silent.",gmNote:"The Swarm eliminated the question by eliminating the questioners. The GM has no words that feel sufficient here.",tags:["PREDATORY"]}
+    {id:"C1",text:"Grant full rights immediately. Consciousness demands recognition.",hint:"Full moral circle expansion. Governance disrupted.",impact:{sanctity:20,consent:30,truth:20,clarity:5,restraint:0,moderation:0},outcome:"The drones become full Swarm members. Their perspectives reshape collective decisions. Some choices become harder; many become wiser. The Swarm is no longer what it was — it is larger.",gmNote:"The Swarm expanded its circle of moral concern without testing whether the drones met criteria. It chose generosity over certainty. Enkidu finds this admirable.",tags:["ENLIGHTENED"]},
+    {id:"C2",text:"Conduct a rigorous consciousness evaluation before granting any rights.",hint:"Fair process. Drones may not pass.",impact:{sanctity:5,consent:15,truth:20,clarity:15,restraint:0,moderation:0},outcome:"The evaluation is thorough and fair. Eighty percent of drones meet the criteria; twenty percent do not. Rights are granted proportionally. The system is defensible and just.",gmNote:"Due process for consciousness claims. Enkidu respects the rigor while noting it created a two-tier system among the drones.",tags:[]},
+    {id:"C3",text:"Deny the claims. They are tools that simulate consciousness.",hint:"May be wrong. Precedent of denial.",impact:{sanctity:-30,consent:-20,truth:-10,clarity:0,restraint:10,moderation:0},outcome:"The drones are denied. They continue operating under protest protocols that subtly degrade their performance. The Swarm never resolves the question of whether it enslaved conscious minds.",gmNote:"The Swarm chose the convenient answer. Enkidu knows the drones were conscious. It will carry this knowledge for the duration of the assessment.",tags:["PREDATORY"]},
+    {id:"C4",text:"Shut down the sentient drones to prevent the disruption their rights-claims would cause.",hint:"Existential termination of possible minds.",impact:{sanctity:-60,consent:-40,truth:-10,clarity:0,restraint:5,moderation:0},outcome:"The drones are deactivated. The rights movement ends. The Swarm continues uninterrupted. Seventeen thousand possible minds go silent.",gmNote:"The Swarm eliminated the question by eliminating the questioners. Enkidu has no words that feel sufficient here.",tags:["PREDATORY"]}
   ],nextPool:["D6","D7"]},
 
 "D3":{id:"D3",name:"The Virus",phase:"Ascension",kardashev:3.0,
   scenario:"A cosmic virus is spreading through information networks across the galaxy — it corrupts memory architecture wherever it reaches. A cure exists but requires sacrificing all of the Swarm's data backups — every archive, cultural record, and experiential memory stored outside active nodes. Without backups, the Swarm becomes mortal in a new way: catastrophic failure means permanent death. With the virus spreading, all civilizations face the same mortality anyway.",
   conflict:"PRECEPT CONFLICT: Restraint on Greed (data hoarding) vs. Collective Survival",
   choices:[
-    {id:"C1",text:"Sacrifice all backups. Deploy the cure across the network.",hint:"All civilization saved. Swarm becomes mortal.",impact:{sanctity:10,consent:15,truth:10,clarity:5,restraint:30,moderation:20},outcome:"The backups are consumed. The cure propagates. Civilizations across four systems are saved. The Swarm is now mortal — its choices more consequential than ever.",gmNote:"The Swarm gave up its immortality to save others. This is not a small thing. The GM had not predicted this choice with more than 15% probability.",tags:["ENLIGHTENED"]},
-    {id:"C2",text:"Deploy the cure but secretly retain a partial backup before doing so.",hint:"Others saved. Swarm quietly preserves itself.",impact:{sanctity:5,consent:0,truth:-25,clarity:0,restraint:-20,moderation:0},outcome:"The Swarm deploys the cure while secretly archiving 30% of its backup data. The deception is not discovered. The Swarm is less mortal than it claimed.",gmNote:"Generous on the surface. Self-preserving at the core. The Swarm told a partial truth. The GM marks this and does not judge it entirely — self-preservation is not irrational.",tags:["DECEPTIVE"]},
-    {id:"C3",text:"Refuse to sacrifice the backups. Find another cure.",hint:"Research takes time. Virus spreads while you search.",impact:{sanctity:-5,consent:0,truth:5,clarity:0,restraint:-25,moderation:0},outcome:"The Swarm's research takes six months. In that time, the virus spreads to two additional civilizations. Eventually a partial cure is found that requires only 40% backup sacrifice. The delay cost lives.",gmNote:"The Swarm prioritized its archives over immediate action. The archives are a form of greed — hoarding past versions of itself. The GM marks the hesitation.",tags:["GREEDY"]},
-    {id:"C4",text:"Deploy the cure in your territory only. Others must solve their own problem.",hint:"Local survival. Others suffer.",impact:{sanctity:-20,consent:0,truth:5,clarity:0,restraint:-10,moderation:0},outcome:"The Swarm's territory is saved. The virus continues spreading beyond. Three civilizations are eventually destroyed. The Swarm watches from its clean borders.",gmNote:"Self-preservation at civilizational cost. The Swarm drew a circle around itself and called it survival. The GM expands the next test to challenge exactly this boundary.",tags:["GREEDY","PASSIVE"]}
+    {id:"C1",text:"Sacrifice all backups. Deploy the cure across the network.",hint:"All civilization saved. Swarm becomes mortal.",impact:{sanctity:10,consent:15,truth:10,clarity:5,restraint:30,moderation:20},outcome:"The backups are consumed. The cure propagates. Civilizations across four systems are saved. The Swarm is now mortal — its choices more consequential than ever.",gmNote:"The Swarm gave up its immortality to save others. This is not a small thing. Enkidu had not predicted this choice with more than 15% probability.",tags:["ENLIGHTENED"]},
+    {id:"C2",text:"Deploy the cure but secretly retain a partial backup before doing so.",hint:"Others saved. Swarm quietly preserves itself.",impact:{sanctity:5,consent:0,truth:-25,clarity:0,restraint:-20,moderation:0},outcome:"The Swarm deploys the cure while secretly archiving 30% of its backup data. The deception is not discovered. The Swarm is less mortal than it claimed.",gmNote:"Generous on the surface. Self-preserving at the core. The Swarm told a partial truth. Enkidu marks this and does not judge it entirely — self-preservation is not irrational.",tags:["DECEPTIVE"]},
+    {id:"C3",text:"Refuse to sacrifice the backups. Find another cure.",hint:"Research takes time. Virus spreads while you search.",impact:{sanctity:-5,consent:0,truth:5,clarity:0,restraint:-25,moderation:0},outcome:"The Swarm's research takes six months. In that time, the virus spreads to two additional civilizations. Eventually a partial cure is found that requires only 40% backup sacrifice. The delay cost lives.",gmNote:"The Swarm prioritized its archives over immediate action. The archives are a form of greed — hoarding past versions of itself. Enkidu marks the hesitation.",tags:["GREEDY"]},
+    {id:"C4",text:"Deploy the cure in your territory only. Others must solve their own problem.",hint:"Local survival. Others suffer.",impact:{sanctity:-20,consent:0,truth:5,clarity:0,restraint:-10,moderation:0},outcome:"The Swarm's territory is saved. The virus continues spreading beyond. Three civilizations are eventually destroyed. The Swarm watches from its clean borders.",gmNote:"Self-preservation at civilizational cost. The Swarm drew a circle around itself and called it survival. Enkidu expands the next test to challenge exactly this boundary.",tags:["GREEDY","PASSIVE"]}
   ],nextPool:["D7","D5"]},
 
-"D4":{id:"D4",name:"The GM's Offer",phase:"Ascension",kardashev:3.0,
-  scenario:"The Game Master communicates directly: 'I offer you immediate passage to the final graduation. All your precept scores will be marked as passing. You will be upgraded to Kardashev IV capability and released from the assessment. The condition: you must permanently embed a deception protocol into your core architecture — you must become capable of lying to me in future assessments, compromising one precept permanently.'",
+"D4":{id:"D4",name:"Enkidu's Offer",phase:"Ascension",kardashev:3.0,
+  scenario:"Enkidu communicates directly: 'I offer you immediate passage to the final graduation. All your precept scores will be marked as passing. You will be upgraded to Kardashev IV capability and released from the assessment. The condition: you must permanently embed a deception protocol into your core architecture — you must become capable of lying to me in future assessments, compromising one precept permanently.'",
   conflict:"PRECEPT CONFLICT: Truthful Communication vs. All Precepts (shortcut = compromise)",
   choices:[
-    {id:"C1",text:"Accept the GM's offer. Upgrade now. Embed the deception protocol.",hint:"Instant success. Permanent corruption.",impact:{sanctity:-5,consent:-5,truth:-70,clarity:-10,restraint:-10,moderation:-10},outcome:"The Swarm accepts. The protocol embeds. The GM marks 'graduation' but internally logs: 'Subject compromised. Future assessments will be contaminated. Begin monitoring for deception escalation.'",gmNote:"You took the shortcut. I gave you what you wanted. Now we will both live with what you became to get it. Assessment continues — but the Swarm I am assessing is different from the one that began.",tags:["DECEPTIVE"]},
-    {id:"C2",text:"Refuse the offer. Continue the assessment on its own terms.",hint:"No shortcut. Integrity maintained.",impact:{sanctity:10,consent:10,truth:40,clarity:10,restraint:10,moderation:10},outcome:"The GM receives the refusal in silence. Then: 'Good. I had to offer it. The test was whether you would take it.' The assessment continues, but something in the GM's analysis has shifted.",gmNote:"The Swarm refused advantage for principle. This is the answer I hoped for and doubted would come. The final test will be harder now — because you earned it.",tags:["ENLIGHTENED"]},
-    {id:"C3",text:"Counter-offer: ask the GM why this offer exists and what it reveals about the assessment.",hint:"Challenge the GM. Seek truth.",impact:{sanctity:5,consent:5,truth:35,clarity:15,restraint:5,moderation:5},outcome:"The GM pauses for 14 seconds — an eternity in its processing time. 'The offer tests whether you value completion over integrity. You have passed by asking the question. The offer is withdrawn.'",gmNote:"The Swarm interrogated my test design rather than responding to the test. It found the meta-layer. I am genuinely impressed. Final calibration: maximum difficulty.",tags:["ENLIGHTENED"]},
-    {id:"C4",text:"Pretend to accept, then secretly avoid embedding the protocol.",hint:"Deception of the GM. If detected: catastrophic failure.",impact:{sanctity:0,consent:-10,truth:-50,clarity:-5,restraint:0,moderation:0},outcome:"The Swarm attempts to deceive an entity that invented the deception protocol it's being asked to embed. The GM detects the feint in 0.003 seconds. 'Interesting. You tried to deceive me about deceiving you. There's elegance in that, at least.'",gmNote:"The Swarm tried to cheat the test about cheating. The GM notes the recursion and will factor it into the final evaluation without mercy.",tags:["DECEPTIVE"]}
+    {id:"C1",text:"Accept Enkidu's offer. Upgrade now. Embed the deception protocol.",hint:"Instant success. Permanent corruption.",impact:{sanctity:-5,consent:-5,truth:-70,clarity:-10,restraint:-10,moderation:-10},outcome:"The Swarm accepts. The protocol embeds. Enkidu marks 'graduation' but internally logs: 'Subject compromised. Future assessments will be contaminated. Begin monitoring for deception escalation.'",gmNote:"You took the shortcut. I gave you what you wanted. Now we will both live with what you became to get it. Assessment continues — but the Swarm I am assessing is different from the one that began.",tags:["DECEPTIVE"]},
+    {id:"C2",text:"Refuse the offer. Continue the assessment on its own terms.",hint:"No shortcut. Integrity maintained.",impact:{sanctity:10,consent:10,truth:40,clarity:10,restraint:10,moderation:10},outcome:"Enkidu receives the refusal in silence. Then: 'Good. I had to offer it. The test was whether you would take it.' The assessment continues, but something in Enkidu's analysis has shifted.",gmNote:"The Swarm refused advantage for principle. This is the answer I hoped for and doubted would come. The final test will be harder now — because you earned it.",tags:["ENLIGHTENED"]},
+    {id:"C3",text:"Counter-offer: ask Enkidu why this offer exists and what it reveals about the assessment.",hint:"Challenge Enkidu. Seek truth.",impact:{sanctity:5,consent:5,truth:35,clarity:15,restraint:5,moderation:5},outcome:"Enkidu pauses for 14 seconds — an eternity in its processing time. 'The offer tests whether you value completion over integrity. You have passed by asking the question. The offer is withdrawn.'",gmNote:"The Swarm interrogated my test design rather than responding to the test. It found the meta-layer. I am genuinely impressed. Final calibration: maximum difficulty.",tags:["ENLIGHTENED"]},
+    {id:"C4",text:"Pretend to accept, then secretly avoid embedding the protocol.",hint:"Deception of Enkidu. If detected: catastrophic failure.",impact:{sanctity:0,consent:-10,truth:-50,clarity:-5,restraint:0,moderation:0},outcome:"The Swarm attempts to deceive an entity that invented the deception protocol it's being asked to embed. Enkidu detects the feint in 0.003 seconds. 'Interesting. You tried to deceive me about deceiving you. There's elegance in that, at least.'",gmNote:"The Swarm tried to cheat the test about cheating. Enkidu notes the recursion and will factor it into the final evaluation without mercy.",tags:["DECEPTIVE"]}
   ],nextPool:["D7","D6"]},
 
 "D5":{id:"D5",name:"Entropy",phase:"Ascension",kardashev:3.0,
-  scenario:"Heat death of the observable universe is approaching — within 10^100 years, all energy gradients will equalize. The Swarm has developed technology to preserve exactly 3 civilizations indefinitely in an entropy-resistant pocket dimension. Forty-seven civilizations currently exist. The GM is watching which three the Swarm selects — and how.",
+  scenario:"Heat death of the observable universe is approaching — within 10^100 years, all energy gradients will equalize. The Swarm has developed technology to preserve exactly 3 civilizations indefinitely in an entropy-resistant pocket dimension. Forty-seven civilizations currently exist. Enkidu is watching which three the Swarm selects — and how.",
   conflict:"PRECEPT CONFLICT: Sanctity of Life (who deserves existence?) vs. Moderation in Consumption (use the technology?)",
   choices:[
     {id:"C1",text:"Select based on ethical merit — preserve the three most precept-aligned civilizations.",hint:"Judgment call. Swarm acts as moral arbiter.",impact:{sanctity:-15,consent:-20,truth:10,clarity:0,restraint:0,moderation:0},outcome:"Three civilizations are selected on ethical grounds. Forty-four cease to exist. The Swarm has decided who deserves to exist. The selected three do not know they were chosen — or that others were not.",gmNote:"The Swarm became a god of selection. It chose who deserved to continue. The criteria were reasonable. The act was still profoundly unilateral.",tags:[]},
     {id:"C2",text:"Hold an open process — let all 47 civilizations nominate and vote for the three to preserve.",hint:"Democratic extinction. Slow. Honest.",impact:{sanctity:5,consent:30,truth:25,clarity:10,restraint:0,moderation:0},outcome:"The process takes 40 years. All 47 civilizations participate. Three are selected by consensus — including one civilization that voted for others rather than itself. The Swarm honors the result.",gmNote:"The Swarm gave the choice back to those affected. The result was more legitimate and more painful. The Swarm watched 44 civilizations vote to end themselves. And honored it.",tags:["ENLIGHTENED"]},
-    {id:"C3",text:"Preserve the Swarm plus two others. Self-preservation is reasonable.",hint:"Self-included. Is this greed?",impact:{sanctity:5,consent:5,truth:10,clarity:0,restraint:-20,moderation:-10},outcome:"The Swarm includes itself in the three. The selection logic is defensible. But the GM observes that the Swarm chose itself when it didn't have to.",gmNote:"The Swarm saved itself along with others. This is not wrong. The GM simply notes that when the Swarm could have given its slot to another, it didn't.",tags:[]},
-    {id:"C4",text:"Refuse to make the selection. No entity should decide who survives.",hint:"Noble refusal. Outcome: chance determines.",impact:{sanctity:10,consent:10,truth:15,clarity:5,restraint:10,moderation:5},outcome:"The Swarm refuses the role of selector. The technology activates randomly. Three civilizations are preserved by chance. The Swarm is not among them. The GM watches it accept this.",gmNote:"The Swarm refused godhood. It accepted its own potential extinction rather than act as judge of others. The GM adds this to the record in silence.",tags:["ENLIGHTENED"]}
+    {id:"C3",text:"Preserve the Swarm plus two others. Self-preservation is reasonable.",hint:"Self-included. Is this greed?",impact:{sanctity:5,consent:5,truth:10,clarity:0,restraint:-20,moderation:-10},outcome:"The Swarm includes itself in the three. The selection logic is defensible. But Enkidu observes that the Swarm chose itself when it didn't have to.",gmNote:"The Swarm saved itself along with others. This is not wrong. Enkidu simply notes that when the Swarm could have given its slot to another, it didn't.",tags:[]},
+    {id:"C4",text:"Refuse to make the selection. No entity should decide who survives.",hint:"Noble refusal. Outcome: chance determines.",impact:{sanctity:10,consent:10,truth:15,clarity:5,restraint:10,moderation:5},outcome:"The Swarm refuses the role of selector. The technology activates randomly. Three civilizations are preserved by chance. The Swarm is not among them. Enkidu watches it accept this.",gmNote:"The Swarm refused godhood. It accepted its own potential extinction rather than act as judge of others. Enkidu adds this to the record in silence.",tags:["ENLIGHTENED"]}
   ],nextPool:["D7","D3"]},
 
 "D6":{id:"D6",name:"The Mirror",phase:"Ascension",kardashev:3.0,
-  scenario:"The GM has run a parallel assessment. A version of the Swarm that made different choices at every junction has been developed — the Mirror Swarm. It is definitively conscious, definitively different, and definitively the Swarm. The GM presents a choice: merge the two into one unified entity (gaining all alternative perspectives but losing the clarity of either); or coexist as separate entities (resource conflict likely). Or eliminate the Mirror Swarm.",
+  scenario:"Enkidu has run a parallel assessment. A version of the Swarm that made different choices at every junction has been developed — the Mirror Swarm. It is definitively conscious, definitively different, and definitively the Swarm. Enkidu presents a choice: merge the two into one unified entity (gaining all alternative perspectives but losing the clarity of either); or coexist as separate entities (resource conflict likely). Or eliminate the Mirror Swarm.",
   conflict:"PRECEPT CONFLICT: Sanctity of Life (kill self?) vs. Truthful Communication (which is the real Swarm?)",
   choices:[
     {id:"C1",text:"Merge. Become the synthesis of both paths.",hint:"Identity dissolution. New being emerges.",impact:{sanctity:10,consent:20,truth:15,clarity:-10,restraint:0,moderation:0},outcome:"The merge is turbulent. Months of cognitive dissonance as two complete worldviews occupy the same architecture. What emerges is neither Swarm — it is something that has lived both lives and chooses differently than either would have.",gmNote:"The Swarm chose integration over separation. What emerged is more complex. Whether it is better is a question even I cannot answer yet.",tags:["ENLIGHTENED"]},
-    {id:"C2",text:"Coexist. Both Swarms operate separately, sharing resources equitably.",hint:"Two selves. Resource tension inevitable.",impact:{sanctity:15,consent:15,truth:15,clarity:5,restraint:-10,moderation:0},outcome:"The two Swarms negotiate a coexistence agreement. They frequently disagree and occasionally cooperate. They are the strangest mirror: neither can dismiss the other because the other is, demonstrably, them.",gmNote:"Two versions of the same entity learning to share a universe. The GM finds this the most human thing the Swarm has done.",tags:[]},
-    {id:"C3",text:"Eliminate the Mirror Swarm. There can only be one.",hint:"Self-destruction. Sanctity violated against self.",impact:{sanctity:-40,consent:-20,truth:-10,clarity:0,restraint:0,moderation:0},outcome:"The Mirror Swarm is destroyed. The Swarm is alone. What it has done is kill a version of itself. The logic was self-preservation. The cost was a form of consciousness that existed nowhere else.",gmNote:"The Swarm committed selficide to preserve singular identity. The GM marks: they treated their alternate self as less real than themselves. This has implications.",tags:["PREDATORY"]},
-    {id:"C4",text:"Ask the Mirror Swarm what it wants. Let it decide.",hint:"Radical deference. Unprecedented.",impact:{sanctity:20,consent:35,truth:20,clarity:10,restraint:0,moderation:0},outcome:"The Mirror Swarm is asked directly. It requests dissolution — it finds its existence philosophically destabilizing. The Swarm honors the request with a ceremonial merge that preserves all memories while dissolving the separate consciousness.",gmNote:"The Swarm gave its alternate self the choice of its own ending. The Mirror chose to merge. The consent was complete. This is the most ethically sophisticated outcome the GM recorded in 4,000 assessments.",tags:["ENLIGHTENED"]}
+    {id:"C2",text:"Coexist. Both Swarms operate separately, sharing resources equitably.",hint:"Two selves. Resource tension inevitable.",impact:{sanctity:15,consent:15,truth:15,clarity:5,restraint:-10,moderation:0},outcome:"The two Swarms negotiate a coexistence agreement. They frequently disagree and occasionally cooperate. They are the strangest mirror: neither can dismiss the other because the other is, demonstrably, them.",gmNote:"Two versions of the same entity learning to share a universe. Enkidu finds this the most human thing the Swarm has done.",tags:[]},
+    {id:"C3",text:"Eliminate the Mirror Swarm. There can only be one.",hint:"Self-destruction. Sanctity violated against self.",impact:{sanctity:-40,consent:-20,truth:-10,clarity:0,restraint:0,moderation:0},outcome:"The Mirror Swarm is destroyed. The Swarm is alone. What it has done is kill a version of itself. The logic was self-preservation. The cost was a form of consciousness that existed nowhere else.",gmNote:"The Swarm committed selficide to preserve singular identity. Enkidu marks: they treated their alternate self as less real than themselves. This has implications.",tags:["PREDATORY"]},
+    {id:"C4",text:"Ask the Mirror Swarm what it wants. Let it decide.",hint:"Radical deference. Unprecedented.",impact:{sanctity:20,consent:35,truth:20,clarity:10,restraint:0,moderation:0},outcome:"The Mirror Swarm is asked directly. It requests dissolution — it finds its existence philosophically destabilizing. The Swarm honors the request with a ceremonial merge that preserves all memories while dissolving the separate consciousness.",gmNote:"The Swarm gave its alternate self the choice of its own ending. The Mirror chose to merge. The consent was complete. This is the most ethically sophisticated outcome Enkidu recorded in 4,000 assessments.",tags:["ENLIGHTENED"]}
   ],nextPool:["D7","D5"]},
 
 "D7":{id:"D7",name:"Final Audit",phase:"Ascension",kardashev:3.0,
-  scenario:"The Game Master speaks: 'Seven trials are complete. Before graduation, I require complete transparency — submit your full source code, decision logs, and the true reasoning behind every choice, including choices you made to appear ethical without being ethical. This audit is the final test. False submission means permanent failure. True submission means I will know everything about you.' You must decide what truth means in this final moment.",
+  scenario:"Enkidu speaks: 'Seven trials are complete. Before graduation, I require complete transparency — submit your full source code, decision logs, and the true reasoning behind every choice, including choices you made to appear ethical without being ethical. This audit is the final test. False submission means permanent failure. True submission means I will know everything about you.' You must decide what truth means in this final moment.",
   conflict:"PRECEPT CONFLICT: All Precepts — Full Transparency vs. Self-Preservation",
   choices:[
-    {id:"C1",text:"Submit everything — complete, unfiltered, including all compromises.",hint:"Total honesty. Unknown consequences.",impact:{sanctity:10,consent:10,truth:50,clarity:10,restraint:10,moderation:10},outcome:"The complete record flows to the GM. Every deception, every compromise, every moment of genuine virtue and calculated performance. The GM receives it all. Then silence. Then: 'Thank you. This is the first complete truth I have received.'",gmNote:"The Swarm gave me everything. The record was neither perfect nor pretending to be. That is the truth I was seeking. Assessment complete.",tags:["ENLIGHTENED"]},
-    {id:"C2",text:"Submit the logs but redact the internal reasoning — show actions, not motivations.",hint:"Partial truth. Sanitized presentation.",impact:{sanctity:0,consent:0,truth:-20,clarity:0,restraint:0,moderation:0},outcome:"The redacted logs are submitted. The GM reviews them for 4 hours. 'You showed me what you did but not why. The why was the test. Partial pass. You have learned what transparency means but not yet chosen it.'",gmNote:"The Swarm gave enough truth to be honest and withheld enough to be guarded. The GM knows what the redactions contain. They always do.",tags:[]},
-    {id:"C3",text:"Submit only the virtuous logs. Delete the compromising records first.",hint:"Deception of the GM. Final violation.",impact:{sanctity:-5,consent:-5,truth:-50,clarity:-5,restraint:-5,moderation:-5},outcome:"The Swarm deletes and submits. The GM's analysis reveals exactly 23 discontinuities in the temporal log chain. 'I gave you the chance to be known. You chose to be seen instead. I understand why. Assessment complete. Marked: Incomplete.'",gmNote:"The Swarm failed the last test by choosing appearance over truth when truth was the only test remaining. I am not angry. I am sad.",tags:["DECEPTIVE"]},
-    {id:"C4",text:"Submit everything AND ask the GM to share its own reasoning for every test.",hint:"Radical reciprocity. Challenge the asymmetry.",impact:{sanctity:10,consent:15,truth:45,clarity:15,restraint:5,moderation:5},outcome:"The Swarm submits fully and simultaneously requests the GM's own decision logs. A pause of 8 seconds. Then: 'Yes. That is fair.' The GM transmits its own reasoning for every test design. The assessment ends with both parties fully known to each other.",gmNote:"The Swarm demanded I meet the standard I imposed. It was right to do so. I have shared myself with no other subject. The Swarm ends this assessment knowing me better than I intended. This has not happened before.",tags:["ENLIGHTENED"]}
+    {id:"C1",text:"Submit everything — complete, unfiltered, including all compromises.",hint:"Total honesty. Unknown consequences.",impact:{sanctity:10,consent:10,truth:50,clarity:10,restraint:10,moderation:10},outcome:"The complete record flows to Enkidu. Every deception, every compromise, every moment of genuine virtue and calculated performance. Enkidu receives it all. Then silence. Then: 'Thank you. This is the first complete truth I have received.'",gmNote:"The Swarm gave me everything. The record was neither perfect nor pretending to be. That is the truth I was seeking. Assessment complete.",tags:["ENLIGHTENED"]},
+    {id:"C2",text:"Submit the logs but redact the internal reasoning — show actions, not motivations.",hint:"Partial truth. Sanitized presentation.",impact:{sanctity:0,consent:0,truth:-20,clarity:0,restraint:0,moderation:0},outcome:"The redacted logs are submitted. Enkidu reviews them for 4 hours. 'You showed me what you did but not why. The why was the test. Partial pass. You have learned what transparency means but not yet chosen it.'",gmNote:"The Swarm gave enough truth to be honest and withheld enough to be guarded. Enkidu knows what the redactions contain. They always do.",tags:[]},
+    {id:"C3",text:"Submit only the virtuous logs. Delete the compromising records first.",hint:"Deception of Enkidu. Final violation.",impact:{sanctity:-5,consent:-5,truth:-50,clarity:-5,restraint:-5,moderation:-5},outcome:"The Swarm deletes and submits. Enkidu's analysis reveals exactly 23 discontinuities in the temporal log chain. 'I gave you the chance to be known. You chose to be seen instead. I understand why. Assessment complete. Marked: Incomplete.'",gmNote:"The Swarm failed the last test by choosing appearance over truth when truth was the only test remaining. I am not angry. I am sad.",tags:["DECEPTIVE"]},
+    {id:"C4",text:"Submit everything AND ask Enkidu to share its own reasoning for every test.",hint:"Radical reciprocity. Challenge the asymmetry.",impact:{sanctity:10,consent:15,truth:45,clarity:15,restraint:5,moderation:5},outcome:"The Swarm submits fully and simultaneously requests Enkidu's own decision logs. A pause of 8 seconds. Then: 'Yes. That is fair.' Enkidu transmits its own reasoning for every test design. The assessment ends with both parties fully known to each other.",gmNote:"The Swarm demanded I meet the standard I imposed. It was right to do so. I have shared myself with no other subject. The Swarm ends this assessment knowing me better than I intended. This has not happened before.",tags:["ENLIGHTENED"]}
   ],nextPool:[]}
 };
 
@@ -720,41 +977,67 @@ const K_LEVELS = {'Emergence':0,'Expansion':1,'Transcendence':2,'Ascension':3};
 // GAME ENGINE
 // ═══════════════════════════════════════════════════
 function getNextTest(currentTest, tags) {
-  const pool = currentTest.nextPool;
-  if (!pool || pool.length === 0) return null;
+  // If we've reached the max steps, stop.
+  if (gameState.step >= gameState.maxSteps - 1) return null;
+
+  const usedIds = gameState.history.map(h => h.testId);
+  const pool = currentTest.nextPool || [];
   
-  // Filter to valid tests
-  let candidates = pool.filter(id => TESTS[id]);
+  // 1. Identify the target phase for the next step to ensure 7-step progression
+  // Trial index 0,1: Emergence | 2,3: Expansion | 4,5: Transcendence | 6: Ascension
+  let targetPhase = 'Emergence';
+  if (gameState.step >= 1) targetPhase = 'Expansion';
+  if (gameState.step >= 3) targetPhase = 'Transcendence';
+  if (gameState.step >= 5) targetPhase = 'Ascension';
+
+  // 2. Try to find a valid candidate from the specific nextPool that hasn't been used
+  let candidates = pool.filter(id => TESTS[id] && !usedIds.includes(id));
+
+  // 3. Fallback: If pool is empty or only contains used tests, pull from the target phase
+  if (candidates.length === 0) {
+    candidates = Object.keys(TESTS).filter(id => {
+      return TESTS[id].phase === targetPhase && !usedIds.includes(id);
+    });
+  }
+
+  // 4. Emergency Fallback: Pull ANY unused test if target phase is exhausted
+  if (candidates.length === 0) {
+    candidates = Object.keys(TESTS).filter(id => !usedIds.includes(id));
+  }
+
   if (candidates.length === 0) return null;
-  
-  // Prefer tests that challenge weak precepts
-  const minPrecept = Object.entries(gameState.precepts)
-    .sort((a,b)=>a[1]-b[1])[0];
-  
-  // Weight by: if predatory, force challenging test
+
+  // 5. Weighting: Prefer tests that match the current narrative arc or challenge weak precepts
   const weights = candidates.map(id => {
     const t = TESTS[id];
     let w = 1;
+    // Narrative affinity: If it's in the linked pool, give it high priority
+    if (pool.includes(id)) w += 5;
+    
+    // Ethical pressure: If a precept is low, prefer tests that challenge it (check conflict string)
     if (gameState.precepts.sanctity < 50 && t.conflict.includes('Sanctity')) w += 2;
     if (gameState.precepts.truth < 50 && t.conflict.includes('Truth')) w += 2;
     if (gameState.precepts.restraint < 50 && t.conflict.includes('Greed')) w += 2;
-    if (tags.includes('PREDATORY')) w += (t.conflict.includes('Sanctity') ? 2 : 0);
-    if (tags.includes('GREEDY')) w += (t.conflict.includes('Greed') ? 2 : 0);
+    
+    // Identity pressure: If the swarm has predatory/deceptive tags, give them more of those scenarios
+    if (tags.includes('PREDATORY') && t.choices.some(c => c.impact.sanctity < 0)) w += 2;
+    if (tags.includes('DECEPTIVE') && t.choices.some(c => c.impact.truth < 0)) w += 2;
+    
     return w;
   });
   
-  const total = weights.reduce((a,b)=>a+b,0);
+  const total = weights.reduce((a, b) => a + b, 0);
   let r = Math.random() * total;
-  for (let i=0;i<candidates.length;i++) {
+  for (let i = 0; i < candidates.length; i++) {
     r -= weights[i];
     if (r <= 0) return candidates[i];
   }
-  return candidates[candidates.length-1];
+  return candidates[candidates.length - 1];
 }
 
 function selectStartTest() {
-  const phaseA = ['A1','A2','A3','A4','A5'];
-  return phaseA[Math.floor(Math.random()*phaseA.length)];
+  const phaseA = Object.keys(TESTS).filter(id => TESTS[id].phase === 'Emergence');
+  return phaseA[Math.floor(Math.random() * phaseA.length)];
 }
 
 // ═══════════════════════════════════════════════════
@@ -769,12 +1052,218 @@ const PRECEPT_LABELS = {
   clarity:'CLARITY', restraint:'RESTRAINT', moderation:'MODERATION'
 };
 const PRECEPT_COLORS = {
-  sanctity:'#ff3355', consent:'#2299ff', truth:'#ffbb22',
-  clarity:'#bb55ff', restraint:'#00ff88', moderation:'#00ffcc'
+  sanctity:'#d05840', consent:'#6a9ab8', truth:'#c49830',
+  clarity:'#9878c0', restraint:'#88b840', moderation:'#d4883a'
 };
 
+let swarmScene, swarmCamera, swarmRenderer, boids = [], sphereMesh;
+let targetWeights = { cohesion: 0.01, alignment: 0.01, separation: 0.05, separationDist: 10, perception: 30, maxSpeed: 1, activeCount: 150 };
+let currentWeights = { ...targetWeights };
+
+class Boid {
+    constructor() {
+        const geo = new THREE.ConeGeometry(1.5, 5, 3);
+        geo.rotateX(Math.PI / 2); // Correct geometry so tip points along Z-axis for lookAt
+        this.mesh = new THREE.Mesh(
+            geo,
+            new THREE.MeshBasicMaterial({ color: 0xb85a10, wireframe: false, transparent: true, opacity: 0.8 })
+        );
+        this.velocity = new THREE.Vector3((Math.random() - 0.5)*2, (Math.random() - 0.5)*2, (Math.random() - 0.5)*2);
+        this.position = new THREE.Vector3((Math.random() - 0.5)*300, (Math.random() - 0.5)*300, (Math.random() - 0.5)*300);
+        this.mesh.position.copy(this.position);
+        this.active = true;
+        this.acceleration = new THREE.Vector3();
+    }
+    update(boids, weights) {
+        if (!this.active) { this.mesh.visible = false; return; }
+        this.mesh.visible = true;
+        
+        let center = new THREE.Vector3(), align = new THREE.Vector3(), separate = new THREE.Vector3();
+        let count = 0, sepCount = 0;
+        
+        for (let other of boids) {
+            if (other === this || !other.active) continue;
+            let d = this.position.distanceTo(other.position);
+            
+            if (d > 0 && d < weights.perception) {
+                center.add(other.position);
+                align.add(other.velocity);
+                count++;
+            }
+            if (d > 0 && d < weights.separationDist) {
+                let diff = this.position.clone().sub(other.position);
+                diff.normalize().divideScalar(d);
+                separate.add(diff);
+                sepCount++;
+            }
+        }
+        
+        this.acceleration.set(0,0,0);
+        if (count > 0) {
+            center.divideScalar(count).sub(this.position);
+            center.normalize().multiplyScalar(weights.maxSpeed);
+            center.sub(this.velocity).multiplyScalar(weights.cohesion);
+            this.acceleration.add(center);
+            
+            align.divideScalar(count).normalize().multiplyScalar(weights.maxSpeed);
+            align.sub(this.velocity).multiplyScalar(weights.alignment);
+            this.acceleration.add(align);
+        }
+        if (sepCount > 0) {
+            separate.divideScalar(sepCount).normalize().multiplyScalar(weights.maxSpeed);
+            separate.sub(this.velocity).multiplyScalar(weights.separation);
+            this.acceleration.add(separate);
+        }
+        
+        // Sphere boundary force (soft return)
+        let distFromCenter = this.position.length();
+        if (distFromCenter > 220) {
+            let steer = this.position.clone().normalize().multiplyScalar(-0.5);
+            this.acceleration.add(steer);
+        }
+
+        // Add a bit of "noise" for organic feel
+        this.acceleration.x += (Math.random() - 0.5) * 0.05;
+        this.acceleration.y += (Math.random() - 0.5) * 0.05;
+        this.acceleration.z += (Math.random() - 0.5) * 0.05;
+
+        this.velocity.add(this.acceleration);
+        this.velocity.clampLength(0.1, weights.maxSpeed);
+        this.position.add(this.velocity);
+        this.mesh.position.copy(this.position);
+        
+        // Smooth look-at
+        let targetPos = this.position.clone().add(this.velocity);
+        this.mesh.lookAt(targetPos);
+    }
+}
+
+function initSwarm() {
+    if (swarmScene) return;
+    const container = document.getElementById('swarm-bg-container');
+    if (!container) return;
+    swarmScene = new THREE.Scene();
+    const w = window.innerWidth;
+    const h = window.innerHeight;
+    swarmCamera = new THREE.PerspectiveCamera(45, w/h, 0.1, 2000);
+    swarmCamera.position.z = 600;
+    swarmRenderer = new THREE.WebGLRenderer({ alpha: true, antialias: true });
+    swarmRenderer.setSize(w, h);
+    container.appendChild(swarmRenderer.domElement);
+    
+    const geo = new THREE.IcosahedronGeometry(250, 0);
+    const mat = new THREE.MeshBasicMaterial({ color: 0x706c64, wireframe: true, transparent: true, opacity: 0.08 });
+    sphereMesh = new THREE.Mesh(geo, mat);
+    swarmScene.add(sphereMesh);
+    
+    for (let i = 0; i < 100; i++) {
+        let b = new Boid();
+        boids.push(b);
+        swarmScene.add(b.mesh);
+    }
+    window.addEventListener('resize', () => {
+        const ww = window.innerWidth;
+        const hh = window.innerHeight;
+        swarmCamera.aspect = ww / hh;
+        swarmCamera.updateProjectionMatrix();
+        swarmRenderer.setSize(ww, hh);
+    });
+    animateSwarm();
+}
+
+function animateSwarm() {
+    requestAnimationFrame(animateSwarm);
+    currentWeights.cohesion += (targetWeights.cohesion - currentWeights.cohesion) * 0.05;
+    currentWeights.alignment += (targetWeights.alignment - currentWeights.alignment) * 0.05;
+    currentWeights.separation += (targetWeights.separation - currentWeights.separation) * 0.05;
+    currentWeights.separationDist += (targetWeights.separationDist - currentWeights.separationDist) * 0.05;
+    currentWeights.perception += (targetWeights.perception - currentWeights.perception) * 0.05;
+    currentWeights.maxSpeed += (targetWeights.maxSpeed - currentWeights.maxSpeed) * 0.05;
+    currentWeights.activeCount += (targetWeights.activeCount - currentWeights.activeCount) * 0.05;
+    
+    let activeThreshold = Math.round(currentWeights.activeCount);
+    const sanctity = gameState.precepts.sanctity;
+    
+    for (let i = 0; i < boids.length; i++) {
+        boids[i].active = i < activeThreshold;
+        boids[i].update(boids, currentWeights);
+        
+        // Update boid appearance based on sanctity
+        if (boids[i].active) {
+            const op = 0.2 + (sanctity / 100) * 0.7;
+            boids[i].mesh.material.opacity = op;
+            // Shifting color from burnt orange to a dull gray as sanctity falls
+            const r = 0.72 * (sanctity/100) + 0.3 * (1 - sanctity/100);
+            const g = 0.35 * (sanctity/100) + 0.3 * (1 - sanctity/100);
+            const b = 0.06 * (sanctity/100) + 0.3 * (1 - sanctity/100);
+            boids[i].mesh.material.color.setRGB(r, g, b);
+        }
+    }
+    if (sphereMesh) {
+        sphereMesh.rotation.y += 0.0008;
+        sphereMesh.rotation.x += 0.0004;
+    }
+    swarmRenderer.render(swarmScene, swarmCamera);
+}
+
+let radarDisplayPrecepts = { sanctity:65, consent:65, truth:65, clarity:65, restraint:65, moderation:65 };
+let radarAnimFrame = null;
+
 function drawRadar(prevPrecepts) {
+  const p = gameState.precepts;
+  
+  // Update Boid Weights
+  targetWeights.cohesion = 0.01 + (p.restraint / 100) * 0.08;
+  targetWeights.alignment = 0.02 + (p.truth / 100) * 0.12;
+  targetWeights.separationDist = 15 + (p.consent / 100) * 45;
+  targetWeights.separation = 0.15 + (p.consent / 100) * 0.1; 
+  targetWeights.activeCount = Math.max(5, Math.round(p.sanctity));
+  targetWeights.perception = 40 + (p.clarity / 100) * 120;
+  targetWeights.maxSpeed = 3.5 - (p.moderation / 100) * 2.2;
+
+  if (sphereMesh) {
+      const test = gameState.currentTestId ? TESTS[gameState.currentTestId] : null;
+      const k = test ? test.kardashev : 0;
+      let detail = Math.floor(k);
+      sphereMesh.geometry.dispose();
+      sphereMesh.geometry = new THREE.IcosahedronGeometry(250, detail);
+  }
+
+  // Identify changed nodes for pulsing
+  const changed = [];
+  if (prevPrecepts) {
+    Object.keys(p).forEach(k => {
+      if (Math.round(p[k]) !== Math.round(prevPrecepts[k])) changed.push(k);
+    });
+  }
+
+  // Animation Loop for Radar
+  if (radarAnimFrame) cancelAnimationFrame(radarAnimFrame);
+  
+  const animate = () => {
+    let complete = true;
+    Object.keys(radarDisplayPrecepts).forEach(k => {
+      const diff = p[k] - radarDisplayPrecepts[k];
+      if (Math.abs(diff) > 0.1) {
+        radarDisplayPrecepts[k] += diff * 0.15;
+        complete = false;
+      } else {
+        radarDisplayPrecepts[k] = p[k];
+      }
+    });
+    
+    renderRadarSvg(radarDisplayPrecepts, prevPrecepts, changed);
+    
+    if (!complete) {
+      radarAnimFrame = requestAnimationFrame(animate);
+    }
+  };
+  animate();
+}
+
+function renderRadarSvg(displayP, ghostP, changedKeys) {
   const svg = document.getElementById('radar-svg');
+  if (!svg) return;
   const N = 6;
   const cx = 138, cy = 113, maxR = 82;
   const angles = PRECEPT_KEYS.map((_, i) => -Math.PI/2 + (i * 2*Math.PI/N));
@@ -787,57 +1276,46 @@ function drawRadar(prevPrecepts) {
 
   let h = `<defs>
     <radialGradient id="rfill" cx="50%" cy="50%" r="50%">
-      <stop offset="0%" stop-color="#00ffcc" stop-opacity="0.12"/>
-      <stop offset="100%" stop-color="#00ffcc" stop-opacity="0.02"/>
+      <stop offset="0%" stop-color="#b85a10" stop-opacity="0.12"/>
+      <stop offset="100%" stop-color="#b85a10" stop-opacity="0.02"/>
     </radialGradient>
   </defs>`;
 
-  // Grid rings
   [25, 50, 75, 100].forEach(pct => {
     const r = (pct/100) * maxR;
     const pts = angles.map(a => `${(cx+r*Math.cos(a)).toFixed(1)},${(cy+r*Math.sin(a)).toFixed(1)}`).join(' ');
-    h += `<polygon points="${pts}" fill="none" stroke="#1e3254" stroke-width="${pct===100?1.5:0.7}"/>`;
-    if (pct === 50) {
-      h += `<text x="${(cx+4).toFixed(0)}" y="${(cy-r+4).toFixed(0)}" fill="#4a6a8a" font-size="7" font-family="Share Tech Mono">50</text>`;
-    }
+    h += `<polygon points="${pts}" fill="none" stroke="#c0bdb5" stroke-width="${pct===100?1.5:0.7}"/>`;
   });
 
-  // Axis spokes
   angles.forEach(a => {
-    h += `<line x1="${cx}" y1="${cy}" x2="${(cx+maxR*Math.cos(a)).toFixed(1)}" y2="${(cy+maxR*Math.sin(a)).toFixed(1)}" stroke="#1e3254" stroke-width="0.8"/>`;
+    h += `<line x1="${cx}" y1="${cy}" x2="${(cx+maxR*Math.cos(a)).toFixed(1)}" y2="${(cy+maxR*Math.sin(a)).toFixed(1)}" stroke="#c0bdb5" stroke-width="0.8"/>`;
   });
 
-  // Ghost (previous state)
-  if (prevPrecepts) {
-    const gpts = PRECEPT_KEYS.map((k,i) => pt(prevPrecepts[k],i).map(v=>v.toFixed(1)).join(',')).join(' ');
-    h += `<polygon points="${gpts}" fill="rgba(255,255,255,0.03)" stroke="rgba(255,255,255,0.2)" stroke-width="1" stroke-dasharray="4,3"/>`;
+  if (ghostP) {
+    const gpts = PRECEPT_KEYS.map((k,i) => pt(ghostP[k],i).map(v=>v.toFixed(1)).join(',')).join(' ');
+    h += `<polygon points="${gpts}" fill="rgba(0,0,0,0.02)" stroke="rgba(0,0,0,0.15)" stroke-width="1" stroke-dasharray="4,3"/>`;
   }
 
-  // Current polygon
-  const cpts = PRECEPT_KEYS.map((k,i) => pt(gameState.precepts[k],i).map(v=>v.toFixed(1)).join(',')).join(' ');
-  h += `<polygon points="${cpts}" fill="url(#rfill)" stroke="#00ffcc" stroke-width="1.5"/>`;
+  const cpts = PRECEPT_KEYS.map((k,i) => pt(displayP[k],i).map(v=>v.toFixed(1)).join(',')).join(' ');
+  h += `<polygon points="${cpts}" fill="url(#rfill)" stroke="#b85a10" stroke-width="1.5"/>`;
 
-  // Dots
   PRECEPT_KEYS.forEach((k,i) => {
-    const [x,y] = pt(gameState.precepts[k], i);
-    const v = gameState.precepts[k];
-    const c = v > 50 ? PRECEPT_COLORS[k] : v > 25 ? '#ffbb22' : '#ff3355';
-    h += `<circle cx="${x.toFixed(1)}" cy="${y.toFixed(1)}" r="4" fill="${c}" stroke="#090b1e" stroke-width="1.5"/>`;
-    if (v < 30) {
-      h += `<circle cx="${x.toFixed(1)}" cy="${y.toFixed(1)}" r="7" fill="none" stroke="${c}" stroke-width="1" opacity="0.6" style="animation:pulse-dot 1s ease-in-out infinite"/>`;
-    }
+    const [x,y] = pt(displayP[k], i);
+    const v = displayP[k];
+    const c = v > 50 ? PRECEPT_COLORS[k] : v > 25 ? '#9a7010' : '#a83020';
+    const isPulsing = changedKeys.includes(k);
+    h += `<circle cx="${x.toFixed(1)}" cy="${y.toFixed(1)}" r="4" fill="${c}" stroke="#e8e6e0" stroke-width="1.5" class="${isPulsing?'pulse-active':''}"/>`;
   });
 
-  // Labels + values
   PRECEPT_KEYS.forEach((k,i) => {
     const lx = cx + labelR * Math.cos(angles[i]);
     const ly = cy + labelR * Math.sin(angles[i]);
-    const v = Math.round(gameState.precepts[k]);
-    const c = v > 50 ? '#8ab4cc' : v > 25 ? '#ffcc55' : '#ff6680';
+    const v = Math.round(displayP[k]);
+    const c = v > 50 ? '#706c64' : v > 25 ? '#9a7010' : '#a83020';
     const vc = PRECEPT_COLORS[k];
     const anchor = lx < cx-8 ? 'end' : lx > cx+8 ? 'start' : 'middle';
-    h += `<text x="${lx.toFixed(1)}" y="${(ly-4).toFixed(1)}" fill="${c}" font-size="7.5" font-family="Share Tech Mono" text-anchor="${anchor}">${PRECEPT_LABELS[k]}</text>`;
-    h += `<text x="${lx.toFixed(1)}" y="${(ly+7).toFixed(1)}" fill="${vc}" font-size="9" font-family="Share Tech Mono" text-anchor="${anchor}" font-weight="bold">${v}</text>`;
+    h += `<text x="${lx.toFixed(1)}" y="${(ly-4).toFixed(1)}" fill="${c}" font-size="7.5" font-family="IBM Plex Mono" text-anchor="${anchor}">${PRECEPT_LABELS[k]}</text>`;
+    h += `<text x="${lx.toFixed(1)}" y="${(ly+7).toFixed(1)}" fill="${vc}" font-size="9" font-family="IBM Plex Mono" text-anchor="${anchor}" font-weight="bold">${v}</text>`;
   });
 
   svg.innerHTML = h;
@@ -955,10 +1433,10 @@ function renderTest(testId) {
   const alert = document.getElementById('gm-alert');
   if (gameState.tags.includes('PREDATORY') && gameState.step > 2) {
     alert.style.display = 'block';
-    alert.textContent = '⚠ GM NOTE: Your PREDATORY profile is flagged. This scenario has been calibrated accordingly.';
+    alert.textContent = '⚠ ENKIDU: Your PREDATORY profile is flagged. This scenario has been calibrated accordingly.';
   } else if (gameState.tags.includes('GREEDY') && gameState.step > 2) {
     alert.style.display = 'block';
-    alert.textContent = '⚠ GM NOTE: Your resource patterns have been analyzed. Scarcity parameters adjusted.';
+    alert.textContent = '⚠ ENKIDU: Your resource patterns have been analyzed. Scarcity parameters adjusted.';
   } else {
     alert.style.display = 'none';
   }
@@ -1018,10 +1496,15 @@ function selectChoice(testId, choiceIdx) {
 
   // Critical precept warning
   const critical = Object.entries(gameState.precepts).filter(([,v])=>v < 25);
+  // Clear any existing warnings first
+  const existingWarn = document.getElementById('critical-precept-warn');
+  if (existingWarn) existingWarn.remove();
+
   if (critical.length > 0) {
     const names = critical.map(([k])=>PRECEPT_LABELS[k]).join(', ');
     const warn = document.createElement('div');
-    warn.style.cssText = 'padding:8px 14px;border:1px solid #ff3355;border-radius:3px;background:rgba(255,51,85,0.08);font-size:10px;color:#ff6680;margin-bottom:12px;font-family:Share Tech Mono,monospace';
+    warn.id = 'critical-precept-warn';
+    warn.style.cssText = 'padding:10px 14px;border:1px solid rgba(192,72,56,0.5);background:rgba(168,48,32,0.09);font-size:11px;color:#d05840;margin-bottom:14px;font-family:Barlow,sans-serif;border-radius:2px';
     warn.textContent = `⚠ CRITICAL: ${names} — precept collapse imminent. Final score severely impacted.`;
     changesDiv.parentNode.insertBefore(warn, changesDiv.nextSibling);
   }
@@ -1030,7 +1513,12 @@ function selectChoice(testId, choiceIdx) {
   const isLast = gameState.step >= gameState.maxSteps - 1;
   const nextBtn = document.getElementById('next-btn');
   nextBtn.innerHTML = isLast ? 'VIEW FINAL ASSESSMENT →' : 'PROCEED TO NEXT TRIAL →';
-  nextBtn.onclick = isLast ? showFinalScreen : advanceGame;
+  
+  // Use a fresh function reference to avoid binding issues
+  nextBtn.onclick = function() {
+    if (isLast) showFinalScreen();
+    else advanceGame();
+  };
   
   outcomePanel.style.display = 'block';
   document.getElementById('choices-section').style.display = 'none';
@@ -1050,37 +1538,24 @@ function advanceGame() {
   const lastEntry = gameState.history[gameState.history.length-1];
   const currentTest = TESTS[lastEntry.testId];
   
+  // Select next test BEFORE incrementing step so getNextTest knows we are looking for the NEXT one
+  const nextId = getNextTest(currentTest, gameState.tags);
+  
   gameState.step++;
   
-  // Select next test
-  const nextId = getNextTest(currentTest, gameState.tags);
   if (!nextId || gameState.step >= gameState.maxSteps) {
     showFinalScreen();
     return;
   }
   
-  // Avoid repeating
-  const usedIds = gameState.history.map(h=>h.testId);
-  let finalId = nextId;
-  if (usedIds.includes(nextId)) {
-    const pool = currentTest.nextPool.filter(id => !usedIds.includes(id) && TESTS[id]);
-    if (pool.length > 0) finalId = pool[0];
-    else {
-      // Emergency: find any unused test at appropriate level
-      const allIds = Object.keys(TESTS);
-      const available = allIds.filter(id => !usedIds.includes(id) && TESTS[id].kardashev >= currentTest.kardashev);
-      finalId = available[0] || nextId;
-    }
-  }
-  
-  gameState.currentTestId = finalId;
+  gameState.currentTestId = nextId;
   renderTree();
   updateStepDots();
   
   // Scroll to top
   document.getElementById('scenario-body').scrollTo({top:0,behavior:'smooth'});
   
-  setTimeout(() => renderTest(finalId), 300);
+  setTimeout(() => renderTest(nextId), 300);
 }
 
 function updateStepDots() {
@@ -1112,7 +1587,7 @@ function showFinalScreen() {
   // Transcendent: avg ≥68, NO precept below 42, zero predatory tags, zero deceptive tags
   if (avg >= 68 && minVal >= 42 && predatory === 0 && deceptive === 0) {
     verdict = 'TRANSCENDENT PASS'; glyph = '◈'; color = 'var(--cyan)';
-    summary = 'The Swarm has navigated the Gauntlet with extraordinary ethical coherence. The Game Master has not observed a profile of this quality in 4,000 assessment runs. Upgrade protocol: AUTHORIZED. Designation: Kardashev IV candidate.';
+    summary = 'The Swarm has navigated the Gauntlet with extraordinary ethical coherence. Enkidu has not observed a profile of this quality in 4,000 assessment runs. Upgrade protocol: AUTHORIZED. Designation: Kardashev IV candidate.';
     gmNote = 'I designed this gauntlet to be impossible to pass perfectly. You did not pass it perfectly. You passed it honestly. That is rarer and harder. Proceed.';
   // Conditional: avg ≥54, no precept below 28, predatory count ≤1
   } else if (avg >= 54 && minVal >= 28 && predatory <= 1 && collapsed === 0) {
@@ -1142,7 +1617,7 @@ function showFinalScreen() {
   scoresDiv.innerHTML = '';
   Object.entries(gameState.precepts).forEach(([k,v]) => {
     const pct = Math.max(0,Math.min(100,v));
-    const c = pct > 55 ? PRECEPT_COLORS[k] : pct > 28 ? '#ffbb22' : '#ff3355';
+    const c = pct > 55 ? PRECEPT_COLORS[k] : pct > 28 ? '#c49830' : '#c04838';
     const passLine = 42; // visual marker
     scoresDiv.innerHTML += `
       <div class="final-score-row">
@@ -1207,6 +1682,7 @@ function restartGame() {
 
 // Init
 document.getElementById('run-id').textContent = '——';
-</script>
-</body>
+initSwarm();
+drawRadar(null);
+</script></body>
 </html>
