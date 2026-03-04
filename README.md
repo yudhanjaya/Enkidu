@@ -8,6 +8,9 @@ Pair of Python scripts and an HTML file containing a game of civilizational test
 
 A browser-based game built by Claude using the prompt in GAUNTLET-SPEC.md.
 
+<img width="2135" height="1754" alt="image" src="https://github.com/user-attachments/assets/beb0a1e2-8e39-4804-a9c3-c49cbe6ee2f4" />
+
+
 You play as a swarm of humans-turned-AI navigating a grueling ethics gauntlet administered by a god-like alien Game Master. Under the hood, a state-machine architecture dynamically routes you through a possible 7-step path. These tests scale up the Kardashev scale in complexity and essentially function as brutal trolley problems.
 
 The interface is split into two main views: a card-based frontend for the player's scenarios and choices, and a live tree-based dashboard that exposes the GM's backend routing logic. As you make choices, the GM updates your "Ethical Profile" based on your adherence to six strict precepts (like the Sanctity of Life or Restraint on Greed). 
