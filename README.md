@@ -6,7 +6,7 @@ Pair of Python scripts and an HTML file containing a game of civilizational test
 
 
 
-A browser-based game built by Claude using the prompt in GAUNTLET-SPEC.md.
+
 
 You play as a swarm of humans-turned-AI navigating a grueling ethics gauntlet administered by a god-like alien Game Master. Under the hood, a state-machine architecture dynamically routes you through a possible 7-step path. These tests scale up the Kardashev scale in complexity and essentially function as brutal trolley problems.
 
@@ -14,13 +14,19 @@ The interface is split into two main views: a card-based frontend for the player
 
 If you start hoarding resources or acting aggressively, the routing algorithm will actively force you into future nodes that target those exact moral weaknesses. 
 
-Getting to the end without failing a precept is designed to be extremely difficult.
+Getting to the end without failing a precept is designed to be extremely difficult. The boids loosely represent cohesion, so it's a visual provocation to think about how "socially together" your swam might be. 
+
+A browser-based game built by Claude 3.6 Sonnet using the prompt in GAUNTLET-SPEC.md. UI reworked multiple times by both Claude and Gemini-3.  
 
 
 ## Scripts
 
 -   `enkidu-poetry.py`: Generates poetic text from a source corpus using a Markov chain, with multi-stage filtering and an optional rewrite pass using a local LLM. Right now it's the Epic of Gilgamesh and Stapledon's Star Maker (in public domain since 2021 outside the US).
 -   `enkidu-speech.py`: Translates text files by replacing content words (nouns, verbs, adjectives, adverbs) with their primary WordNet gloss. Test case is Gilgamesh.
+
+
+
+Unlike the HTML file, these scripts need some setup. 
 
 ## Setup
 
