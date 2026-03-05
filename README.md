@@ -5,8 +5,7 @@ Pair of Python scripts and an HTML file containing a game of civilizational test
 ## Gauntlet
 
 
-<img width="1879" height="968" alt="image" src="https://github.com/user-attachments/assets/bab80747-8a3b-4383-a09b-ccbbe5b1a868" />
-
+<img width="1384" height="1349" alt="image" src="https://github.com/user-attachments/assets/c8d36276-a078-48bd-9b13-2ad1311c4992" />
 
 
 You play as a swarm of humans-turned-AI navigating a grueling ethics gauntlet administered by a god-like alien Game Master. Under the hood, a state-machine architecture dynamically routes you through a possible 7-step path. These tests scale up the Kardashev scale in complexity and essentially function as brutal trolley problems.
@@ -17,7 +16,7 @@ If you start hoarding resources or acting aggressively, the routing algorithm wi
 
 Getting to the end without failing a precept is designed to be extremely difficult. The boids loosely represent cohesion, so it's a visual provocation to think about how "socially together" your swam might be. 
 
-A browser-based game built by Claude 3.6 Sonnet using the prompt in GAUNTLET-SPEC.md. UI reworked multiple times by both Claude and Gemini-3.  
+A browser-based game built by Claude 3.6 Sonnet using the prompt in GAUNTLET-SPEC.md. UI reworked multiple times by both Claude and Gemini-3. As a result, at this point, the CSS and general UI logic is a shoggoth I no longer want to touch. It's readable enough to use as an internal storytelling tool, and that's about it. 
 
 
 ## Scripts
