@@ -13,6 +13,9 @@ Gauntlet is browser-based game built by Claude 3.6 Sonnet using the architecture
 
 The interface is split into two main views: a card-based frontend for the player's scenarios and choices, and a live tree-based dashboard that exposes the GM's backend routing logic. As you make choices, the GM updates your "Ethical Profile" based on your adherence to six strict precepts (like the Sanctity of Life or Restraint on Greed). If you start hoarding resources or acting aggressively, the routing algorithm will actively force you into future nodes that target those exact moral weaknesses. 
 
+<img width="2604" height="1890" alt="image" src="https://github.com/user-attachments/assets/dcf83d42-1bcd-4e2f-877e-5cd53335f810" />
+
+
 Optimal behjaviour follows my interpretation of Buddhist ethics, translated into a scoring schema. Getting to the end without failing a precept is designed to be extremely difficult. 
 
 UI reworked multiple times by both Claude and Gemini-3. This revised version has a constellation view that to my mind fits the project better than the beigeness that existed earlier. Because this is the result of my additions and tweaks, hastily mishmashed together by Claude, the CSS and general UI logic is a shoggoth I no longer want to touch. It's readable enough to use as an internal storytelling tool, and that's about it. 
