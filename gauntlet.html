@@ -380,8 +380,8 @@ main { flex:1; display:flex; overflow:hidden; position:relative; z-index:5; }
 #final-screen {
   display:none; flex-direction:column; align-items:center; justify-content:center;
   padding:48px; text-align:center; flex:1;
-  background:rgba(6,8,16,0.65);
-  backdrop-filter: blur(12px); -webkit-backdrop-filter: blur(12px);
+  background:rgba(6,8,16,0.30);
+  backdrop-filter: blur(6px); -webkit-backdrop-filter: blur(6px);
 }
 .final-glyph {
   font-family:'Barlow Condensed',sans-serif;
@@ -1420,12 +1420,24 @@ function initConstellationSphere() {
 }
 
 // ─── Animation Loop ───────────────────────────────────────────────────────
+let csTargetZ = 560;
+
 function animateConstellationSphere() {
   csAnimId = requestAnimationFrame(animateConstellationSphere);
 
   if (csSphereGroup) {
     csSphereGroup.rotation.y += 0.0009;
     csSphereGroup.rotation.x += 0.00028;
+  }
+
+  // Camera zoom transition
+  if (csCamera) {
+    const diff = csTargetZ - csCamera.position.z;
+    if (Math.abs(diff) > 0.1) {
+      csCamera.position.z += diff * 0.05;
+    } else {
+      csCamera.position.z = csTargetZ;
+    }
   }
 
   // Animate constellation line drawing
@@ -1641,6 +1653,7 @@ function showConstellationScreen(completedEntry, nextTestId) {
     .forEach(id => document.getElementById(id)?.classList.remove('revealed'));
 
   // ── Show overlay ──
+  csTargetZ = 1040; // Zoom out 30% more
   const screen = document.getElementById('constellation-screen');
   screen.style.display = 'block';
   requestAnimationFrame(() => {
@@ -1678,6 +1691,7 @@ function showConstellationScreen(completedEntry, nextTestId) {
 
 function continueFromConstellation() {
   // Retract shelves
+  csTargetZ = 560; // Zoom back in
   document.getElementById('cs-top-shelf')?.classList.remove('revealed');
   document.getElementById('cs-bottom-drawer')?.classList.remove('revealed');
   document.getElementById('game-content').classList.remove('shelves-active');
@@ -1989,6 +2003,7 @@ function updateStepDots() {
 
 function showFinalScreen() {
   document.getElementById('game-content').style.display = 'none';
+  csTargetZ = 1040; // Zoom out for final view
   const fs = document.getElementById('final-screen');
   fs.style.display = 'flex';
   
