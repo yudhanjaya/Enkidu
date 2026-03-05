@@ -4,16 +4,17 @@ Pair of Python scripts and an HTML file containing a game of civilizational test
 
 ## Gauntlet
 
-
-<img width="2750" height="1859" alt="image" src="https://github.com/user-attachments/assets/963e89ee-7c0e-4df8-ab38-350650d633de" />
-
+<img width="2604" height="1890" alt="image" src="https://github.com/user-attachments/assets/dcf83d42-1bcd-4e2f-877e-5cd53335f810" />
 
 
-Gauntlet is browser-based game built by Claude 3.6 Sonnet using the architecture and prompt in GAUNTLET-SPEC.md. You play as a swarm of humans-turned-AI navigating a grueling ethics gauntlet administered by a god-like alien Game Master. Under the hood, a state-machine architecture dynamically routes you through a possible 7-step path. These tests scale up the Kardashev scale in complexity and essentially function as brutal trolley problems. It's a moral test for civilizations, if you will. 
+
+
+Gauntlet is browser-based game built by Claude 3.6 Sonnet using the architecture and prompt in GAUNTLET-SPEC.md. You play as a swarm of humans-turned-AI navigating a grueling ethics gauntlet administered by a god-like alien Game Master (Enkidu). Under the hood, a state-machine architecture dynamically routes you through a possible 7-step path. These tests scale up the Kardashev scale in complexity and essentially function as brutal trolley problems. It's a moral test for civilizations, if you will. 
 
 The interface is split into two main views: a card-based frontend for the player's scenarios and choices, and a live tree-based dashboard that exposes the GM's backend routing logic. As you make choices, the GM updates your "Ethical Profile" based on your adherence to six strict precepts (like the Sanctity of Life or Restraint on Greed). If you start hoarding resources or acting aggressively, the routing algorithm will actively force you into future nodes that target those exact moral weaknesses. 
 
-<img width="2604" height="1890" alt="image" src="https://github.com/user-attachments/assets/dcf83d42-1bcd-4e2f-877e-5cd53335f810" />
+
+<img width="2567" height="1866" alt="image" src="https://github.com/user-attachments/assets/5dc96918-ee28-4dea-bc2e-2c02288c47b3" />
 
 
 Optimal behjaviour follows my interpretation of Buddhist ethics, translated into a scoring schema. Getting to the end without failing a precept is designed to be extremely difficult. 
